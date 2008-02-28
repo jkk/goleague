@@ -340,9 +340,9 @@ function result_matrix($rid) {
         }
     }
     usort($players_x, create_function('$a, $b', 'return strcmp($a["name"], $b["name"]);'));
-    $results = fetch_rows("select * from results where rid='$rid'");
     $players_y = array();
     foreach ($players_x as $p) $players_y[] = $p;
+    $results = fetch_rows("select * from results where rid='$rid'");
     echo "<table class='result-matrix'>";
     $first_y = true;
     $first_x = true;
@@ -485,15 +485,17 @@ function result_form($action, $values=array()) {
         
         <input type='submit' value='Submit'>
     </form>
-    <script>
-    $("#rid").bind("change", function() {
-        $.get("../rounds-players-select/" + this.value, null, function(html) {
-            $("#pw-shell").html(html.replace(/\{pids\}/g, "pw"));
-            $("#pb-shell").html(html.replace(/\{pids\}/g, "pb"));
+    <?php if (!$values['pw'] && !$values['pb']) { ?>
+        <script>
+        $("#rid").bind("change", function() {
+            $.get("../rounds-players-select/" + this.value, null, function(html) {
+                $("#pw-shell").html(html.replace(/\{pids\}/g, "pw"));
+                $("#pb-shell").html(html.replace(/\{pids\}/g, "pb"));
+            });
         });
-    });
-    </script>
+        </script>
     <?php
+    }
 }
 
 // Insert or update result info as appropriate

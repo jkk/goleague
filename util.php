@@ -31,7 +31,7 @@ function dispatch($site_class) {
     $resources = either($vars['resources'], array());
     $res_len = 0;
     foreach ($resources as $resource) {
-        if (strpos($in_path, $resource) === 0) {
+        if (preg_match("/^" . preg_quote($resource, '/') . "(\/|$)/", $in_path)) {
             $res_len = count(explode("/", $resource));
             $method = str_replace("/", "_", $resource);
             $params = array_slice($path, $res_len);
@@ -71,10 +71,11 @@ function dispatch($site_class) {
     }
     
     // Hand off to class method
+    $method = str_replace("-", "_", $method);
     if (!method_exists($site_class, $method)) {
         die("WTF is \"" . htmlentities($method) . "\"?");
     } else {
-        call_user_func_array(array('Site', str_replace("-", "_", $method)), $params);
+        call_user_func_array(array('Site', $method), $params);
     }    
 }
 

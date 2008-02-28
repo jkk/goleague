@@ -15,6 +15,7 @@ class Site {
     
     var $resources = array(
         "players",
+        "rounds",
         "results",
         "admin/bands",
         "admin/rounds",
@@ -23,14 +24,33 @@ class Site {
     var $protected = array(
         "admin" => array("username" => "emptysky", "password" => "xxx"));
     
-    function standings() {
-        insert_header("Player Standings");
-        
-        insert_footer();
+    function rounds_browse() {
+        insert_content(
+            "Archived Rounds",
+            browse_table("select r.rid, concat_ws('', 'Band ', b.name, ', ',
+                date_format(r.begins, '%c/%e'), ' - ', date_format(r.ends, '%c/%e')) as round
+                from rounds r join bands b on r.bid=b.bid
+                order by b.name, r.begins",
+                "rounds/"));
     }
     
-    function archive() {
-        
+    function rounds_view($rid) {
+        insert_header("Round Results");
+        if ($rid == "current") {
+            $latest_rounds = get_latest_rounds();
+            foreach ($latest_rounds as $round) {
+                echo "<h3>Round: " . $round['round'] . "</h3>";
+                echo result_matrix($round['rid']);
+            }
+        } else {
+            $round = fetch_row("select concat_ws('', 'Band ', b.name, ', ',
+                date_format(r.begins, '%c/%e'), ' - ', date_format(r.ends, '%c/%e')) as round
+                from rounds r join bands b on r.bid=b.bid
+                where r.rid='$rid'");
+            echo "<h3>Round: " . $round['round'] . "</h3>";
+            echo result_matrix($rid);
+        }
+        insert_footer();
     }
     
     function players_browse() {
@@ -39,21 +59,22 @@ class Site {
             browse_table("select pid, name as player from players order by name", "players/"));
     }
     
-    function rounds($rid, $action, $subaction) {
-        if ($action == "players" && $subaction == "select") {
-            $players = fetch_rows("select p.pid, p.name
-                from players p join players_to_rounds pr on p.pid=pr.pid and pr.rid='$rid'
-                order by name");
-            echo get_select($players, "{pids}", "pid", "name", "[Select a player...]");
-        }
+    function results_browse() {
+        redir("rounds/current");
     }
     
-    function results_browse() {
-        insert_header("Results");
-        echo browse_table("select '#', r.result, pw.name as white, pb.name as black, report_date as date
+    function results_view($ids) {
+        list($rid, $pw, $pb) = split("-", $ids);
+        insert_header();
+        $result = fetch_row("select r.result, pw.name as white, pb.name as black,
+            r.sgf, r.report_date as date
             from results r join players pw on r.pw=pw.pid
-            join players pb on r.pb=pb.pid
-            order by report_date desc");
+            join players pb on r.pb=pb.pid 
+            where r.pw='$pw' and r.pb='$pb' and r.rid='$rid'");
+        $sgf = href("sgf/" . htmlentities($result['sgf']));
+        echo "<h3>" . $result['white'] . "(W) vs. " . $result['black'] . "(B)</h3>";
+        echo "<p><a href='$sgf'>Download .SGF</a></p>";
+        echo "<div class='eidogo-player-auto' sgf='$sgf'>";
         insert_footer();
     }
     
@@ -63,19 +84,7 @@ class Site {
         <form action="<?=href("results/add")?>" method="post" enctype="multipart/form-data">
             <div>Round:</div>
         <?php
-            $rounds = fetch_rows("select r.rid, concat_ws('', date_format(r.begins, '%c/%e'), ' - ',
-                date_format(r.ends, '%c/%e'), ', Band ', b.name) as round, r.bid
-                from rounds r join bands b on r.bid=b.bid
-                order by b.name");
-            // Show one round per band
-            $latest_rounds = array();
-            $bids = array();
-            foreach ($rounds as $round) {
-                if (!in_array($round['bid'], $bids)) {
-                    $latest_rounds[] = $round;
-                    $bids[] = $round['bid'];
-                }
-            }
+            $latest_rounds = get_latest_rounds();
             echo get_select($latest_rounds, "rid", "rid", "round", "[Select a round...]");
         ?>
             <div>White player:</div>
@@ -102,7 +111,7 @@ class Site {
         </form>
         <script>
         $("#rid").bind("change", function() {
-            $.get("../rounds/" + this.value + "/players/select", null, function(html) {
+            $.get("../rounds-players-select/" + this.value, null, function(html) {
                 $("#pw-shell").html(html.replace(/\{pids\}/g, "pw"));
                 $("#pb-shell").html(html.replace(/\{pids\}/g, "pb"));
             });
@@ -112,17 +121,26 @@ class Site {
         insert_footer();
     }
     
+    function rounds_players_select($rid) {
+        $players = fetch_rows("select p.pid, p.name
+            from players p join players_to_rounds pr on p.pid=pr.pid and pr.rid='$rid'
+            order by name");
+        echo get_select($players, "{pids}", "pid", "name", "[Select a player...]");
+    }
+    
     function results_add($values) {
+        $sgf = "";
         if ($_FILES['sgf'] && $_FILES['sgf']['error'] == 0) {
-            move_uploaded_file($_FILES['sgf']['tmp_name'], "sgf/" . $_FILES['sgf']['name']);
-            chmod("sgf/" . $_FILES['sgf']['name'], 0777);
+            $sgf = $values['rid'] . "-" . $_FILES['sgf']['name'];
+            move_uploaded_file($_FILES['sgf']['tmp_name'], "sgf/" . $sgf);
+            chmod("sgf/" . $sgf, 0777);
         }
         insert_row("results", array(
             "rid" => $values['rid'],
             "pw" => $values['pw'],
             "pb" => $values['pb'],
             "result" => $values['result'],
-            "sgf" => $_FILES['sgf']['name'],
+            "sgf" => $sgf,
             "report_date" => "now()"));
         redir("results", true);
     }
@@ -131,9 +149,9 @@ class Site {
         insert_content(
             "League Admin",
             "<ul>
-                <li><a href='" . href("admin/bands") . "'>Bands</a></li>
-                <li><a href='" . href("admin/rounds") . "'>Rounds</a></li>
                 <li><a href='" . href("results/add") . "'>Report Result</a></li>
+                <li><a href='" . href("admin/rounds") . "'>Rounds</a></li>
+                <li><a href='" . href("admin/bands") . "'>Bands</a></li>
             </ul>");
     }
     
@@ -291,6 +309,80 @@ class Site {
 }
 
 // Helper functions
+
+function result_matrix($rid) {
+    $players_x = fetch_rows("select p.pid, p.name
+        from players p join players_to_rounds pr on p.pid=pr.pid and pr.rid='$rid'
+        order by p.name");
+    $results = fetch_rows("select * from results where rid='$rid'");
+    $players_y = array();
+    foreach ($players_x as $p) $players_y[] = $p;
+    echo "<table class='result-matrix'>";
+    $first_y = true;
+    $first_x = true;
+    echo "<tr><th>&nbsp;</th>";
+    foreach ($players_x as $px) {
+        echo "<th>" . $px['name'] . "</th>";
+    }
+    echo "<th>Score</th></tr>";
+    foreach ($players_y as $py) {
+        $wins = 0;
+        $losses = 0;
+        echo "<tr>";
+        $first_x = true;
+        foreach ($players_x as $px) {
+            if ($first_x)
+                echo "<th>" . $py['name'] . "</th>";
+            list($result, $presult) = get_result($rid, $results, $px['pid'], $py['pid']);
+            if ($presult == 1)
+                $wins++;
+            elseif ($presult == 2)
+                $losses++;
+            echo ($px['pid'] == $py['pid'] ? "<td class='x'>&nbsp;</td>" : "<td>$result</td>");
+            $first_x = false;
+        }
+        echo "<td>0-0</td>";
+        echo "</tr>";
+        $first_y = false;
+    }
+    echo "</table>";
+}
+
+function get_result($rid, $results, $pid1, $pid2) {
+    foreach ($results as $result) {
+        if (($pid1 == $result['pw'] || $pid1 == $result['pb']) &&
+            ($pid2 == $result['pw'] || $pid2 == $result['pb'])) {
+            if (($result == "W+" && $pid1 == $result['pw']) ||
+                ($result == "B+" && $pid2 == $result['pb']))
+                $presult = 1;
+            else
+                $presult = 2;
+            $retresult = $result['result'];
+            if ($result['sgf'])
+                $retresult = "<a href='" . href("results/$rid-" . $result['pw'] .
+                    "-" . $result['pb']). "'>$retresult</a>";
+            return array($retresult, $presult);
+        }
+    }
+    return array("-", 0);
+}
+
+function get_latest_rounds() {
+    $rounds = fetch_rows("select r.rid, concat_ws('', 'Band ', b.name, ', ',
+        date_format(r.begins, '%c/%e'), ' - ', date_format(r.ends, '%c/%e')) as round, r.bid
+        from rounds r join bands b on r.bid=b.bid
+        order by b.name");
+    // Show one round per band
+    $latest_rounds = array();
+    $bids = array();
+    foreach ($rounds as $round) {
+        if (!in_array($round['bid'], $bids)) {
+            $latest_rounds[] = $round;
+            $bids[] = $round['bid'];
+        }
+    }
+    return $latest_rounds;
+}
 
 function insert_new_players($bid, $input) {
     $new_players = preg_split("/(\r\n|\r|\n)/", $input);

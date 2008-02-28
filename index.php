@@ -240,11 +240,10 @@ class Site {
         insert_content(
             "Rounds",
             "<p><a href='" . href("admin/rounds/add") . "'>Add Round</a></p>" .
-            browse_table(
-                "select r.rid, concat_ws('', date_format(r.begins, '%c/%e'), ' - ',
-                    date_format(r.ends, '%c/%e')) as round, b.name as band
-                    from rounds r join bands b on r.bid=b.bid
-                    order by r.begins desc",
+            browse_table("select r.rid, concat_ws('', 'Band ', b.name, ', ',
+                date_format(r.begins, '%c/%e'), ' - ', date_format(r.ends, '%c/%e')) as round
+                from rounds r join bands b on r.bid=b.bid
+                order by r.begins desc",
                 "admin/rounds/"));
     }
     
@@ -343,13 +342,11 @@ class Site {
 // Show a table of all game results for a given round
 function result_matrix($rid) {
     $players_x = fetch_rows("select p.pid, p.name
-        from players p join players_to_rounds pr on p.pid=pr.pid and pr.rid='$rid'
-        order by p.name");
+        from players p join players_to_rounds pr on p.pid=pr.pid and pr.rid='$rid'");
     // Include players no longer assigned to the round but that have results
     $orphans = fetch_rows("select p.pid, p.name
         from players p join results r on (p.pid=r.pw or p.pid=r.pb)
-        where r.rid='$rid'
-        order by p.name");
+        where r.rid='$rid'");
     $orphan_ids = array();
     foreach ($orphans as $orphan) {
         $found = false;
@@ -371,7 +368,7 @@ function result_matrix($rid) {
     foreach ($players_x as $px) {
         echo "<th class='top'>" . $px['name'] . "</th>";
     }
-    echo "<th>Score</th></tr>";
+    echo "<th class='score'>Score</th></tr>";
     foreach ($players_y as $py) {
         $wins = 0;
         $losses = 0;

@@ -79,9 +79,7 @@ function redir($path) {
 
 function insert_header($title=null) {
     include(HEADER_PATH);
-    if (is_null($title)) {
-        $title = SITE_NAME;
-    } else {
+    if ($_REQUEST['path']) {
         $breadcrumbs = array_slice(explode("/", $_REQUEST['path']), 0, -1);
         echo "<div id='breadcrumbs'>";
         echo "<a href='" . URL_ROOT . "'>" . SITE_NAME . "</a>";

@@ -115,6 +115,8 @@ function insert_header($title=null) {
     }
     if ($title) echo "<h2>$title</h2>";
     if ($_REQUEST['success']) {
+        // Directly echoing "extra" isn't strictly secure, but oh well
+        // TODO: improve this
         echo "<p id='feedback'>Success! " . (either($_REQUEST['extra'], "")) . "</p>";
     }
 }
@@ -235,23 +237,19 @@ function get_select($rows, $name, $value, $text, $default="", $selected_field=""
     echo "</select>";
 }
 
-function pacify_input(&$var) {
-	if (is_array($var)) {
-		foreach ($var as $key => $value) {
-			if (is_array($value))
-				pacify_input($var[$key]);
-			else
-				$var[$key] = stripslashes($value);
-		}
-	}
+function strip_recursive(&$var) {
+	if (is_array($var))
+		foreach ($var as $key => $value)
+			if (is_array($value)) strip_recursive($var[$key]);
+			else $var[$key] = stripslashes($value);
 }
 
 function damn_magic_quotes_to_hell() {
     if (get_magic_quotes_gpc()) {
-    	pacify_input($_GET);
-    	pacify_input($_POST);
-    	pacify_input($_COOKIE);
-    	pacify_input($_REQUEST);
+    	strip_recursive($_GET);
+    	strip_recursive($_POST);
+    	strip_recursive($_COOKIE);
+    	strip_recursive($_REQUEST);
     }  
 }
 

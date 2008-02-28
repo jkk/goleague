@@ -188,7 +188,7 @@ class Site {
     }
     
     // View a band's players, with option to add new players
-    // TODO: remove players from band
+    // TODO: ability to remove players from band
     function admin_bands_view($bid, $checkboxes=false) {
         $band = fetch_row("select * from bands where bid='$bid'");
         insert_header("Band: " . htmlentities($band['name']));
@@ -250,6 +250,7 @@ class Site {
     
     // Show players for a band, with options to activate/deactivate them using
     // checkboxes
+    // TODO: ability to edit date range
     function admin_rounds_view($rid) {
         $round = fetch_row("select concat(date_format(begins, '%c/%e'), ' - ',
             date_format(ends, '%c/%e')) as date_range, r.*, b.name as band
@@ -344,6 +345,22 @@ function result_matrix($rid) {
     $players_x = fetch_rows("select p.pid, p.name
         from players p join players_to_rounds pr on p.pid=pr.pid and pr.rid='$rid'
         order by p.name");
+    // Include players no longer assigned to the round but that have results
+    $orphans = fetch_rows("select p.pid, p.name
+        from players p join results r on (p.pid=r.pw or p.pid=r.pb)
+        where r.rid='$rid'
+        order by p.name");
+    $orphan_ids = array();
+    foreach ($orphans as $orphan) {
+        $found = false;
+        foreach ($players_x as $px)
+            if ($px['pid'] == $orphan['pid']) $found = true;
+        if (!$found) {
+            $players_x[] = $orphan;
+            $orphan_ids[] = $orphan['pid'];
+        }
+    }
+    usort($players_x, create_function('$a, $b', 'return strcmp($a["name"], $b["name"]);'));
     $results = fetch_rows("select * from results where rid='$rid'");
     $players_y = array();
     foreach ($players_x as $p) $players_y[] = $p;
@@ -352,7 +369,7 @@ function result_matrix($rid) {
     $first_x = true;
     echo "<tr><th>&nbsp;</th>";
     foreach ($players_x as $px) {
-        echo "<th>" . $px['name'] . "</th>";
+        echo "<th class='top'>" . $px['name'] . "</th>";
     }
     echo "<th>Score</th></tr>";
     foreach ($players_y as $py) {
@@ -368,10 +385,13 @@ function result_matrix($rid) {
                 $losses++;
             elseif ($presult == 2)
                 $wins++;
-            echo ($px['pid'] == $py['pid'] ? "<td class='x'>&nbsp;</td>" : "<td>$result</td>");
+            $is_orphan = (in_array($px['pid'], $orphan_ids) || in_array($py['pid'], $orphan_ids));
+            $is_self = $px['pid'] == $py['pid'];
+            $class = ($is_self || $is_orphan ? " class='x'" : "");
+            echo "<td$class>" . ($is_self ? "&nbsp;" : $result) . "</td>";
             $first_x = false;
         }
-        echo "<td>$wins-$losses</td>";
+        echo "<td class='score'>$wins-$losses</td>";
         echo "</tr>";
         $first_y = false;
     }

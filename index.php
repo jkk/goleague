@@ -261,7 +261,7 @@ class Site {
         <input type="text" name="ends" size="10"> <span>YYYY-MM-DD</span>
         <div>Players:</div>
         <div id='players'>[Select a band]</div>
-        <input type="submit" value="Add Band">
+        <input type="submit" value="Add Round">
         </form>
         
         <script>

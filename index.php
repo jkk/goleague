@@ -142,7 +142,8 @@ class Site {
             "result" => $values['result'],
             "sgf" => $sgf,
             "report_date" => "now()"));
-        redir("rounds/" . $values['rid'], true);
+        redir("rounds/" . $values['rid'], true,
+            "<a href='" . href("results/add") . "'>Add another result?</a>");
     }
     
     function admin() {
@@ -359,6 +360,7 @@ function get_result($rid, $results, $pid1, $pid2) {
             ($pid2 == $result['pw'] || $pid2 == $result['pb'])) {
             if ($result['result'] == "NR" || !$result['result']) {
                 $presult = 0;
+                $retresult = $result['result'];
             } elseif (($result['result'] == "W+" && $pid1 == $result['pw']) ||
                       ($result['result'] == "B+" && $pid1 == $result['pb'])) {
                 $presult = 1;

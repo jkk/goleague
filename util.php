@@ -92,8 +92,11 @@ function pacify_path($path) {
     return strtolower(preg_replace("/[^a-zA-Z0-9-]/", "", $path));
 }
 
-function redir($path, $show_feedback=false) {
-    header("location: " . URL_ROOT . $path . ($show_feedback ? "?success=1" : ""));
+function redir($path, $show_feedback=false, $extra="") {
+    $url = URL_ROOT . $path;
+    $url .=  ($show_feedback ? "?success=1" : "");
+    $url .= ($extra ? ($show_feedback ? "&" : "?") . "extra=" . urlencode($extra) : "");
+    header("location: " . $url);
     exit;
 }
 
@@ -112,7 +115,7 @@ function insert_header($title=null) {
     }
     if ($title) echo "<h2>$title</h2>";
     if ($_REQUEST['success']) {
-        echo "<p id='feedback'>Success!</p>";
+        echo "<p id='feedback'>Success! " . (either($_REQUEST['extra'], "")) . "</p>";
     }
 }
 
@@ -232,5 +235,26 @@ function get_select($rows, $name, $value, $text, $default="", $selected_field=""
     echo "</select>";
 }
 
+function pacify_input(&$var) {
+	if (is_array($var)) {
+		foreach ($var as $key => $value) {
+			if (is_array($value))
+				pacify_input($var[$key]);
+			else
+				$var[$key] = stripslashes($value);
+		}
+	}
+}
+
+function damn_magic_quotes_to_hell() {
+    if (get_magic_quotes_gpc()) {
+    	pacify_input($_GET);
+    	pacify_input($_POST);
+    	pacify_input($_COOKIE);
+    	pacify_input($_REQUEST);
+    }  
+}
+
+damn_magic_quotes_to_hell();
 
 ?>

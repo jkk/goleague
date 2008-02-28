@@ -52,7 +52,7 @@ class Site {
         if ($rid == "current") {
             $latest_rounds = get_latest_rounds();
             foreach ($latest_rounds as $round) {
-                echo "<h3>Round: " . $round['round'] . "</h3>";
+                echo "<h3>" . $round['round'] . "</h3>";
                 echo result_matrix($round['rid']);
             }
         } else {
@@ -60,7 +60,7 @@ class Site {
                 date_format(r.begins, '%c/%e'), ' - ', date_format(r.ends, '%c/%e')) as round
                 from rounds r join bands b on r.bid=b.bid
                 where r.rid='$rid'");
-            echo "<h3>Round: " . $round['round'] . "</h3>";
+            echo "<h3>" . $round['round'] . "</h3>";
             echo result_matrix($rid);
         }
         insert_footer();

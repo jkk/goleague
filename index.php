@@ -339,13 +339,13 @@ function result_matrix($rid) {
                 echo "<th>" . $py['name'] . "</th>";
             list($result, $presult) = get_result($rid, $results, $px['pid'], $py['pid']);
             if ($presult == 1)
-                $wins++;
-            elseif ($presult == 2)
                 $losses++;
+            elseif ($presult == 2)
+                $wins++;
             echo ($px['pid'] == $py['pid'] ? "<td class='x'>&nbsp;</td>" : "<td>$result</td>");
             $first_x = false;
         }
-        echo "<td>0-0</td>";
+        echo "<td>$wins-$losses</td>";
         echo "</tr>";
         $first_y = false;
     }
@@ -353,15 +353,20 @@ function result_matrix($rid) {
 }
 
 function get_result($rid, $results, $pid1, $pid2) {
+    if ($pid1 == $pid2) return array("-", 0);
     foreach ($results as $result) {
         if (($pid1 == $result['pw'] || $pid1 == $result['pb']) &&
             ($pid2 == $result['pw'] || $pid2 == $result['pb'])) {
-            if (($result == "W+" && $pid1 == $result['pw']) ||
-                ($result == "B+" && $pid2 == $result['pb']))
+            if ($result['result'] == "NR" || !$result['result']) {
+                $presult = 0;
+            } elseif (($result['result'] == "W+" && $pid1 == $result['pw']) ||
+                      ($result['result'] == "B+" && $pid1 == $result['pb'])) {
                 $presult = 1;
-            else
+                $retresult = $result['result'] == "W+" ? "B+" : "W+";
+            } else {
                 $presult = 2;
-            $retresult = $result['result'];
+                $retresult = $result['result'];
+            }
             if ($result['sgf'])
                 $retresult = "<a href='" . href("results/$rid-" . $result['pw'] .
                     "-" . $result['pb']). "'>$retresult</a>";

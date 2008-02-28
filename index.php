@@ -2,6 +2,7 @@
 
 include("util.php");
 
+define("SITE_NAME", "Empty Sky League");
 define("FILE_ROOT", dirname(__FILE__));
 define("HEADER_PATH", "../../new/header.phtml");
 define("FOOTER_PATH", "../../new/footer.phtml");
@@ -15,7 +16,8 @@ class Site {
     var $resources = array(
         "players",
         "admin/bands",
-        "admin/rounds");
+        "admin/rounds",
+        "admin/players");
     
     function standings() {
         insert_header("Player Standings");
@@ -49,46 +51,70 @@ class Site {
     
     function admin_bands_view($bid) {
         $band = fetch_row("select * from bands where bid='$bid'");
-        insert_header("Band: " . $band['name']);
+        insert_header("Band: " . htmlentities($band['name']));
         echo browse_table(
-            "select p.pid, name as player
+            "select p.pid, name as player, status
                 from players p, players_to_bands pb
                 where p.pid=pb.pid and pb.bid='$bid'
                 order by name",
-            "players/");
+            "admin/players/");
+        ?>
+        <form action='<?=href("admin/bands/$bid/edit")?>' method='post'>
+            Add players to this band (one name per line):<br>
+            <textarea name="new_players"></textarea><br>
+            <input type="submit" value="Add Players">
+        </form>
+        <?php
         insert_footer();
     }
     
+    function admin_bands_edit($bid, $values) {
+        $new_players = preg_split("/(\r\n|\r|\n)/", $values['new_players']);
+        foreach ($new_players as $new_player) {
+            $pid = insert_row("players", array("name" => $new_player));
+            insert_row("players_to_bands", array("pid" => $pid, "bid" => $bid));
+        }
+        redir("admin/bands/$bid");
+    }
+    
     function admin_bands_add_form() {
-        $players = fetch_rows("select pid, name from players order by name");
         insert_header("Add Band");
         ?>
         <form action='<?=href("admin/bands/add")?>' method='post'>
-        <table>
-        <tr><td>Band name:</td><td><input type="text" name="name"></td></tr>
-        <tr><td>&nbsp;</td><td>
-            <p>
-                <?php if (count($players)) {
-                    echo "Check all players that apply.";
-                } ?>
-                Enter new players in the text box below, one name per line.</p>
-            <textarea name="new_players"></textarea>
-        </td></tr>
-        <tr><td>&nbsp;</td><td><input type="submit" value="Add Band"></td></tr>
-        </table>
+        <div>Band name:</div>
+        <input type="text" name="name">
+        <div>Players, one name per line:</div>
+        <textarea name="new_players"></textarea>
+        <input type="submit" value="Add Band">
         </form>
         <?php
         insert_footer();
     }
     
     function admin_bands_add($values) {
-        $bid = insert_row("bands", array("name" => $_POST['name']));
-        $new_players = preg_split("/(\r\n|\r|\n)/", $_POST['new_players']);
+        $bid = insert_row("bands", array("name" => $values['name']));
+        $new_players = preg_split("/(\r\n|\r|\n)/", $values['new_players']);
         foreach ($new_players as $new_player) {
             $pid = insert_row("players", array("name" => $new_player));
             insert_row("players_to_bands", array("pid" => $pid, "bid" => $bid));
         }
-        header("location: " . href("admin/bands"));
+        redir("admin/bands");
+    }
+    
+    function admin_players_view($pid, $action="") {
+        $player = fetch_row("select * from players where pid='$pid'");
+        if ($action == "toggle") {
+            update_row(
+                "players",
+                array("status" => ($player['status'] == "active" ? "inactive" : "active")),
+                "pid='$pid'");
+            redir("admin/players/$pid");
+        }
+        insert_header("Player: " . htmlentities($player['name']));
+        echo "<p><a href='" . href("admin/players/$pid/toggle") . "'>" .
+            ($player['status'] == "active" ? "Deactivate" : "Activate") . "</a></p>";
+        echo "<p><a href='" . href("players/$pid") . "'>View full record</a></p>";
+        insert_footer();
     }
 }
 

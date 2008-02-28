@@ -31,21 +31,23 @@ function dispatch($site_class) {
     //      foobars -- browse
     //      foobars/add (GET) -- add_form
     //      foobars/add (POST) -- add
-    //      foobars/edit (GET) -- edit_form
-    //      foobars/edit (POST) -- edit
     //      foobars/123 -- view
+    //      foobars/123/edit (GET) -- edit_form
+    //      foobars/123/edit (POST) -- edit
     if ($res_len) {
         if (!$params)
             $method .= "_browse";
         elseif ($params[0] == "add")
-            if (count($_POST))
+            if (count($_POST)) {
                 $method .= "_add";
-            else
+                $params = array($_POST);
+            } else
                 $method .= "_add_form";
-        elseif ($params[0] == "edit")
-            if (count($_POST))
+        elseif ($params[1] == "edit")
+            if (count($_POST)) {
                 $method .= "_edit";
-            else
+                $params = array($params[0], $_POST);
+            } else
                 $method .= "_edit_form";
         else
             $method .= "_view";
@@ -69,13 +71,32 @@ function href($path) {
 function pacify_path($path) {
     return strtolower(preg_replace("/[^a-zA-Z0-9-]/", "", $path));
 }
-function insert_header($title="") {
-    include("../../new/header.phtml");
+
+function redir($path) {
+    header("location: " . URL_ROOT . $path);
+    exit;
+}
+
+function insert_header($title=null) {
+    include(HEADER_PATH);
+    if (is_null($title)) {
+        $title = SITE_NAME;
+    } else {
+        $breadcrumbs = array_slice(explode("/", $_REQUEST['path']), 0, -1);
+        echo "<div id='breadcrumbs'>";
+        echo "<a href='" . URL_ROOT . "'>" . SITE_NAME . "</a>";
+        $trail = array(preg_replace("/\/$/", "", URL_ROOT));
+        foreach ($breadcrumbs as $crumb) {
+            $trail[] = $crumb;
+            echo " &gt; <a href='". implode("/", $trail) . "'>$crumb</a>";
+        }
+        echo "</div>";
+    }
     if ($title) echo "<h2>$title</h2>";
 }
 
 function insert_footer() {
-    include("../../new/footer.phtml");
+    include(FOOTER_PATH);
 }
 
 function insert_content($title, $content) {
@@ -130,16 +151,31 @@ function fetch_rows($select) {
     return $rows;
 }
 
-function insert_row($table, $values) {
+function get_safe_values($values) {
     $safe_keys = array_map("mysql_real_escape_string", array_keys($values));
     $safe_values = array();
     foreach (array_values($values) as $value)
         $safe_values[] = "'" . mysql_real_escape_string($value) . "'";
+    return array($safe_keys, $safe_values);
+}
+
+function insert_row($table, $values) {
+    list($safe_keys, $safe_values) = get_safe_values($values);
     $query = "insert into `" . mysql_real_escape_string($table) . "`" .
         " (" . implode(",", $safe_keys) . ")" .
         " values (" . implode(",", $safe_values) . ")";
     @mysql_query($query);
     return mysql_insert_id();
+}
+
+function update_row($table, $values, $where) {
+    list($safe_keys, $safe_values) = get_safe_values($values);
+    $query = "update `" . mysql_real_escape_string($table) . "` set ";
+    for ($i = 0; $i < count($safe_keys); $i++)
+        $query .= $safe_keys[$i] . "=" . $safe_values[$i] . ", ";
+    $query = preg_replace("/, $/", "", $query);
+    $query .= " where $where";
+    @mysql_query($query);
 }
 
 ?>

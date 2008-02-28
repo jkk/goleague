@@ -36,7 +36,7 @@ class Site {
     
     // Show all rounds
     function rounds_browse() {
-        insert_content(
+        content(
             "Archived Rounds",
             browse_table("select r.rid, concat_ws('', 'Band ', b.name, ', ',
                 date_format(r.begins, '%c/%e'), ' - ', date_format(r.ends, '%c/%e')) as round
@@ -48,7 +48,7 @@ class Site {
     // Show result matrix for the most current rounds (one per band) or for a
     // specific round
     function rounds_view($rid) {
-        insert_header("Round Results");
+        head("Round Results");
         if ($rid == "current") {
             $latest_rounds = get_latest_rounds();
             foreach ($latest_rounds as $round) {
@@ -63,12 +63,12 @@ class Site {
             echo "<h3>" . $round['round'] . "</h3>";
             echo result_matrix($rid);
         }
-        insert_footer();
+        foot();
     }
     
     // Show full list of players
     function players_browse() {
-        insert_content(
+        content(
             "Players",
             browse_table("select pid, name as player from players order by name", "players/"));
     }
@@ -90,17 +90,17 @@ class Site {
             join players pb on r.pb=pb.pid 
             where r.pw='$pw' and r.pb='$pb' and r.rid='$rid'");
         $sgf = href("sgf/" . htmlentities($result['sgf']));
-        insert_header($result['white'] . " (W) vs. " . $result['black'] . " (B)");
+        head($result['white'] . " (W) vs. " . $result['black'] . " (B)");
         echo "<p><a href='$sgf'>Download .SGF</a></p>";
         echo "<div class='eidogo-player-auto' sgf='$sgf'>";
-        insert_footer();
+        foot();
     }
     
     // Add a new game result
     function results_add_form() {
-        insert_header("Report Result");
+        head("Report Result");
         result_form("results/add");
-        insert_footer();
+        foot();
     }
     
     // Save a game result's SGF and insert details into the DB
@@ -120,7 +120,7 @@ class Site {
     
     // Admin front page
     function admin() {
-        insert_content(
+        content(
             "Admin",
             "<ul>
                 <li><a href='" . href("results/add") . "'>Report Game Result</a></li>
@@ -132,7 +132,7 @@ class Site {
     
     // Show all bands for admin editing
     function admin_bands_browse() {
-        insert_content(
+        content(
             "Bands",
             "<p><a href='" . href("admin/bands/add") . "'>Add Band</a></p>" .
             browse_table("select bid, name as band from bands order by name", "admin/bands/"));
@@ -142,7 +142,7 @@ class Site {
     // TODO: ability to remove players from band
     function admin_bands_view($bid, $checkboxes=false) {
         $band = fetch_row("select * from bands where bid='$bid'");
-        insert_header("Band: " . htmlentities($band['name']));
+        head("Band: " . htmlentities($band['name']));
         echo browse_table(
             "select '', p.name as player
                 from players p join players_to_bands pb on p.pid=pb.pid and pb.bid='$bid'
@@ -155,7 +155,7 @@ class Site {
             <input type="submit" value="Add Players">
         </form>
         <?php
-        insert_footer();
+        foot();
     }
     
     // Add new players to a band
@@ -166,7 +166,7 @@ class Site {
     
     // Show form to add a new band
     function admin_bands_add_form() {
-        insert_header("Add Band");
+        head("Add Band");
         ?>
         <form action="<?=href("admin/bands/add")?>" method="post">
         <div>Band name:</div>
@@ -176,7 +176,7 @@ class Site {
         <input type="submit" value="Add Band">
         </form>
         <?php
-        insert_footer();
+        foot();
     }
     
     // Insert a new band into the DB
@@ -188,7 +188,7 @@ class Site {
     
     // Show all rounds for admin editing
     function admin_rounds_browse() {
-        insert_content(
+        content(
             "Rounds",
             "<p><a href='" . href("admin/rounds/add") . "'>Add Round</a></p>" .
             browse_table("select r.rid, concat_ws('', 'Band ', b.name, ', ',
@@ -210,7 +210,7 @@ class Site {
             on p.pid=pb.pid and pb.bid='" . $round['bid'] . "'
             left join players_to_rounds pr on p.pid=pr.pid and pr.rid='$rid'
             order by p.name");
-        insert_header("Round: " . $round['date_range'] . ", Band " . $round['band']);
+        head("Round: " . $round['date_range'] . ", Band " . $round['band']);
         ?>
         <form action='<?=href("admin/rounds/$rid/edit")?>' method='post'>
         <div>Begin date:</div>
@@ -224,7 +224,7 @@ class Site {
         <input type='submit' value='Update Round'>
         </form>
         <?php
-        insert_footer();
+        foot();
     }
     
     // Update a band's player list
@@ -240,7 +240,7 @@ class Site {
     
     // Show form to add a new round
     function admin_rounds_add_form() {
-        insert_header("Add Round");
+        head("Add Round");
         ?>
         <form action='<?=href("admin/rounds/add")?>' method='post'>
         <div>Band:</div>
@@ -268,7 +268,7 @@ class Site {
         })();
         </script>
         <?php
-        insert_footer();
+        foot();
     }
     
     // Spit out checkboxes for players within a given band
@@ -291,23 +291,23 @@ class Site {
     }
     
     function admin_results_browse() {
-        insert_header("Game Results");
+        head("Game Results");
         echo browse_table("select concat(r.rid, '-', pw, '-', pb), r.result,
                 pw.name as white, pb.name as black, report_date as date
                 from results r join players pw on r.pw=pw.pid
                 join players pb on r.pb=pb.pid
                 order by report_date desc",
             "admin/results/");
-        insert_footer();
+        foot();
     }
     
     function admin_results_view($ids) {
         list($rid, $pw, $pb) = split("-", $ids);
-        insert_header("Edit Game Result");
+        head("Edit Game Result");
         $result = fetch_row("select pw, pb, rid, result, sgf, report_date
             from results where pw='$pw' and pb='$pb' and rid='$rid'");
         result_form("admin/results/$ids/edit", $result);
-        insert_footer();
+        foot();
     }
     
     function admin_results_edit($ids, $values) {

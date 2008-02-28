@@ -100,7 +100,7 @@ function redir($path, $show_feedback=false, $extra="") {
     exit;
 }
 
-function insert_header($title=null) {
+function head($title=null) {
     include(HEADER_PATH);
     if ($_REQUEST['path']) {
         $breadcrumbs = array_slice(explode("/", $_REQUEST['path']), 0, -1);
@@ -121,14 +121,14 @@ function insert_header($title=null) {
     }
 }
 
-function insert_footer() {
+function foot() {
     include(FOOTER_PATH);
 }
 
-function insert_content($title, $content) {
-    insert_header($title);
+function content($title, $content) {
+    head($title);
     echo $content;
-    insert_footer();
+    foot();
 }
 
 // Return a table for all rows from a query, hyperlinking to the first col

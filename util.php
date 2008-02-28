@@ -1,9 +1,9 @@
 <?php
 
-function connect($host, $user, $pass) {
+function connect($host, $db, $user, $pass) {
     $dbc = @mysql_connect($host, $user, $pass, true);
     if (!$dbc) die(mysql_error());
-    mysql_select_db("emptysky", $dbc);
+    mysql_select_db($db, $dbc);
 }
 
 // Dispatch to a phtml page or to a class method or die

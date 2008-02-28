@@ -2,14 +2,24 @@
 
 include("util.php");
 
+//////////////////////////////////////////////////////////////////////////////
+// Config
+//////////////////////////////////////////////////////////////////////////////
+
 define("SITE_NAME", "Empty Sky League");
 define("FILE_ROOT", dirname(__FILE__));
 define("HEADER_PATH", "../../new/header.phtml");
 define("FOOTER_PATH", "../../new/footer.phtml");
 define("URL_ROOT", "/league/new/");
+define("USERNAME", "emptysky");
+define("PASSWORD", "xxx");
 
-connect("localhost", "emptysky", "xxx");
+connect("localhost", "emptysky", USERNAME, PASSWORD);
 dispatch("Site");
+
+//////////////////////////////////////////////////////////////////////////////
+// Site pages/actions
+//////////////////////////////////////////////////////////////////////////////
 
 class Site {
     
@@ -22,8 +32,9 @@ class Site {
         "admin/players");
         
     var $protected = array(
-        "admin" => array("username" => "emptysky", "password" => "xxx"));
+        "admin" => array("username" => USERNAME, "password" => PASSWORD));
     
+    // Show all rounds
     function rounds_browse() {
         insert_content(
             "Archived Rounds",
@@ -34,6 +45,8 @@ class Site {
                 "rounds/"));
     }
     
+    // Show result matrix for the most current rounds (one per band) or for a
+    // specific round
     function rounds_view($rid) {
         insert_header("Round Results");
         if ($rid == "current") {
@@ -53,16 +66,22 @@ class Site {
         insert_footer();
     }
     
+    // Show full list of players
     function players_browse() {
         insert_content(
             "Players",
             browse_table("select pid, name as player from players order by name", "players/"));
     }
     
+    function players_view() {
+        // TODO: implement and link to this
+    }
+    
     function results_browse() {
         redir("rounds/current");
     }
     
+    // Display a game's SGF using EidoGo
     function results_view($ids) {
         list($rid, $pw, $pb) = split("-", $ids);
         insert_header();
@@ -78,6 +97,7 @@ class Site {
         insert_footer();
     }
     
+    // Add a new game result
     function results_add_form($action) {
         insert_header("Report Result");
         ?>
@@ -121,6 +141,7 @@ class Site {
         insert_footer();
     }
     
+    // Spit out a <select> element of players for a given round
     function rounds_players_select($rid) {
         $players = fetch_rows("select p.pid, p.name
             from players p join players_to_rounds pr on p.pid=pr.pid and pr.rid='$rid'
@@ -128,6 +149,7 @@ class Site {
         echo get_select($players, "{pids}", "pid", "name", "[Select a player...]");
     }
     
+    // Save a game result's SGF and insert details into the DB
     function results_add($values) {
         $sgf = "";
         if ($_FILES['sgf'] && $_FILES['sgf']['error'] == 0) {
@@ -146,6 +168,7 @@ class Site {
             "<a href='" . href("results/add") . "'>Add another result?</a>");
     }
     
+    // Admin front page
     function admin() {
         insert_content(
             "Admin",
@@ -156,6 +179,7 @@ class Site {
             </ul>");
     }
     
+    // Show all bands for admin editing
     function admin_bands_browse() {
         insert_content(
             "Bands",
@@ -163,6 +187,8 @@ class Site {
             browse_table("select bid, name as band from bands order by name", "admin/bands/"));
     }
     
+    // View a band's players, with option to add new players
+    // TODO: remove players from band
     function admin_bands_view($bid, $checkboxes=false) {
         $band = fetch_row("select * from bands where bid='$bid'");
         insert_header("Band: " . htmlentities($band['name']));
@@ -181,11 +207,13 @@ class Site {
         insert_footer();
     }
     
+    // Add new players to a band
     function admin_bands_edit($bid, $values) {
         insert_new_players($bid, $values['new_players']);
         redir("admin/bands/$bid", true);
     }
     
+    // Show form to add a new band
     function admin_bands_add_form() {
         insert_header("Add Band");
         ?>
@@ -200,12 +228,14 @@ class Site {
         insert_footer();
     }
     
+    // Insert a new band into the DB
     function admin_bands_add($values) {
         $bid = insert_row("bands", array("name" => $values['name']));
         insert_new_players($bid, $values['new_players']);
         redir("admin/bands", true);
     }
     
+    // Show all rounds for admin editing
     function admin_rounds_browse() {
         insert_content(
             "Rounds",
@@ -218,6 +248,8 @@ class Site {
                 "admin/rounds/"));
     }
     
+    // Show players for a band, with options to activate/deactivate them using
+    // checkboxes
     function admin_rounds_view($rid) {
         $round = fetch_row("select concat(date_format(begins, '%c/%e'), ' - ',
             date_format(ends, '%c/%e')) as date_range, r.*, b.name as band
@@ -239,6 +271,7 @@ class Site {
         insert_footer();
     }
     
+    // Update a band's player list
     function admin_rounds_edit($rid, $values) {
         delete_rows("players_to_rounds", "rid='$rid'");
         foreach ($values['pids'] as $pid) {
@@ -247,6 +280,7 @@ class Site {
         redir("admin/rounds/$rid", true);
     }
     
+    // Show form to add a new round
     function admin_rounds_add_form() {
         insert_header("Add Round");
         ?>
@@ -279,6 +313,7 @@ class Site {
         insert_footer();
     }
     
+    // Spit out checkboxes for players within a given band
     function bands_players_checkboxes($bid) {
         $player_select = "select p.pid, p.name as player
             from players p join players_to_bands pb on p.pid=pb.pid and pb.bid='$bid'
@@ -286,6 +321,7 @@ class Site {
         echo get_checkboxes(fetch_rows($player_select), "pids", "pid", "player");
     }
     
+    // Insert band details and players into the DB
     function admin_rounds_add($values) {
         $rid = insert_row("rounds", array(
             "bid" => $values['bid'],
@@ -296,25 +332,14 @@ class Site {
         redir("admin/rounds", true);
     }
     
-    function admin_players_view($pid, $action="") {
-        $player = fetch_row("select * from players where pid='$pid'");
-        if ($action == "toggle") {
-            update_row(
-                "players",
-                array("status" => ($player['status'] == "active" ? "inactive" : "active")),
-                "pid='$pid'");
-            redir("admin/players/$pid", true);
-        }
-        insert_header("Player: " . htmlentities($player['name']));
-        echo "<p><a href='" . href("admin/players/$pid/toggle") . "'>" .
-            ($player['status'] == "active" ? "Deactivate" : "Activate") . "</a></p>";
-        echo "<p><a href='" . href("players/$pid") . "'>View full record</a></p>";
-        insert_footer();
-    }
 }
 
-// Helper functions
 
+//////////////////////////////////////////////////////////////////////////////
+// Helper functions
+//////////////////////////////////////////////////////////////////////////////
+
+// Show a table of all game results for a given round
 function result_matrix($rid) {
     $players_x = fetch_rows("select p.pid, p.name
         from players p join players_to_rounds pr on p.pid=pr.pid and pr.rid='$rid'
@@ -353,6 +378,7 @@ function result_matrix($rid) {
     echo "</table>";
 }
 
+// Determine the end result of a game for use in the result matrix
 function get_result($rid, $results, $pid1, $pid2) {
     if ($pid1 == $pid2) return array("-", 0);
     foreach ($results as $result) {
@@ -378,6 +404,7 @@ function get_result($rid, $results, $pid1, $pid2) {
     return array("-", 0);
 }
 
+// Get the latest round for each band
 function get_latest_rounds() {
     $rounds = fetch_rows("select r.rid, concat_ws('', 'Band ', b.name, ', ',
         date_format(r.begins, '%c/%e'), ' - ', date_format(r.ends, '%c/%e')) as round, r.bid
@@ -395,6 +422,7 @@ function get_latest_rounds() {
     return $latest_rounds;
 }
 
+// Insert new players into the DB using one-name-per-line input source
 function insert_new_players($bid, $input) {
     $new_players = preg_split("/(\r\n|\r|\n)/", $input);
     foreach ($new_players as $new_player) {

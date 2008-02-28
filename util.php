@@ -196,7 +196,7 @@ function insert_row($table, $values) {
     return mysql_insert_id();
 }
 
-function update_row($table, $values, $where) {
+function update_rows($table, $values, $where) {
     list($safe_keys, $safe_values) = get_safe_values($values);
     $query = "update `" . mysql_real_escape_string($table) . "` set ";
     for ($i = 0; $i < count($safe_keys); $i++)

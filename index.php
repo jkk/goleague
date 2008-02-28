@@ -249,7 +249,6 @@ class Site {
     
     // Show players for a band, with options to activate/deactivate them using
     // checkboxes
-    // TODO: ability to edit date range
     function admin_rounds_view($rid) {
         $round = fetch_row("select concat(date_format(begins, '%c/%e'), ' - ',
             date_format(ends, '%c/%e')) as date_range, r.*, b.name as band
@@ -261,18 +260,26 @@ class Site {
             left join players_to_rounds pr on p.pid=pr.pid and pr.rid='$rid'
             order by p.name");
         insert_header("Round: " . $round['date_range'] . ", Band " . $round['band']);
-        echo "<p>Players:</p>";
-        echo "<form action='" . href("admin/rounds/$rid/edit") . "' method='post'>";
-        echo "<div id='players'>";
-        echo get_checkboxes($players, "pids", "pid", "name", "in_round");
-        echo "</div>";
-        echo "<input type='submit' value='Update Players'>";
-        echo "</form>";
+        ?>
+        <form action='<?=href("admin/rounds/$rid/edit")?>' method='post'>
+        <div>Begin date:</div>
+        <input type="text" name="begins" size="10" value='<?=$round['begins']?>'> <span>YYYY-MM-DD</span>
+        <div>End date:</div>
+        <input type="text" name="ends" size="10" value='<?=$round['ends']?>'> <span>YYYY-MM-DD</span>
+        <p>Players:</p>
+        <div id='players'>
+        <?= get_checkboxes($players, "pids", "pid", "name", "in_round") ?>
+        </div>
+        <input type='submit' value='Update Round'>
+        </form>
+        <?php
         insert_footer();
     }
     
     // Update a band's player list
     function admin_rounds_edit($rid, $values) {
+        update_rows("rounds", array("begins" => $values['begins'], "ends" => $values['ends']),
+            "rid='$rid'");
         delete_rows("players_to_rounds", "rid='$rid'");
         foreach ($values['pids'] as $pid) {
             insert_row("players_to_rounds", array("pid" => $pid, "rid" => $rid));

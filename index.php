@@ -437,11 +437,14 @@ function result_form($action, $values=array()) {
     <form action="<?=href($action)?>" method="post" enctype="multipart/form-data">
         <div>Round:</div>
     <?php
-        $rounds = fetch_rows("select r.rid, concat_ws('', 'Band ', b.name, ', ',
-            date_format(r.begins, '%c/%e'), ' - ', date_format(r.ends, '%c/%e')) as round,
-            r.rid='" . $values['rid'] . "' as selected
-            from rounds r join bands b on r.bid=b.bid
-            order by r.begins desc");
+        if ($values['rid'])
+            $rounds = fetch_rows("select r.rid, concat_ws('', 'Band ', b.name, ', ',
+                date_format(r.begins, '%c/%e'), ' - ', date_format(r.ends, '%c/%e')) as round,
+                r.rid='" . $values['rid'] . "' as selected
+                from rounds r join bands b on r.bid=b.bid
+                order by r.begins desc");
+        else
+            $rounds = get_latest_rounds();
         echo get_select($rounds, "rid", "rid", "round", "[Select a round...]", "selected");
         if ($values['pw'] && $values['pb']) {
             $pw = get_select(fetch_rows("select pid, name, pid='" . $values['pw'] . "' as selected

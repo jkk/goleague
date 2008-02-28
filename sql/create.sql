@@ -31,5 +31,5 @@ create table results (
     result char(2),
     sgf varchar(255),
     report_date datetime,
-    primary key(pw, pb, round)
+    primary key(pw, pb, rid)
 );

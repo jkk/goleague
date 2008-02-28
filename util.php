@@ -145,9 +145,9 @@ function browse_table($select, $base_href="") {
             $col_num++;
             $out_value = htmlentities($value);
             if ($col_num == 1) {
-                $href = href($base_href . $out_value);
+                $href = $out_value ? href($base_href . $out_value) : "";
                 continue;
-            } elseif ($col_num == 2) {
+            } elseif ($col_num == 2 && $href) {
                 $out_value = "<a href='$href'>$out_value</a>";
             }
             $retval .= "<td>$out_value</td>";

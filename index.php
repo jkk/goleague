@@ -147,7 +147,7 @@ class Site {
     
     function admin() {
         insert_content(
-            "League Admin",
+            "Admin",
             "<ul>
                 <li><a href='" . href("results/add") . "'>Report Result</a></li>
                 <li><a href='" . href("admin/rounds") . "'>Rounds</a></li>
@@ -164,7 +164,7 @@ class Site {
     
     function admin_bands_view($bid, $checkboxes=false) {
         $band = fetch_row("select * from bands where bid='$bid'");
-        $player_select = "select p.pid, name as player, status
+        $player_select = "select '', name as player
             from players p join players_to_bands pb on p.pid=pb.pid and pb.bid='$bid'
             order by name";
         if ($checkboxes) {

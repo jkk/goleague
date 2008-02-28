@@ -15,6 +15,7 @@ create table rounds (
 create table players_to_rounds (
     pid int not null,
     rid int not null,
+    status enum('active', 'inactive') not null default 'active',
     primary key(pid, rid)
 );
 create table players_to_bands(

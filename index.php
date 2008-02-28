@@ -33,6 +33,12 @@ class Site {
         
     }
     
+    function players_browse() {
+        insert_content(
+            "Players",
+            browse_table("select pid, name as player from players order by name", "players/"));
+    }
+    
     function admin($subpath="", $subaction="") {
         insert_content(
             "League Admin",

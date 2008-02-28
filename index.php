@@ -72,7 +72,7 @@ class Site {
             join players pb on r.pb=pb.pid 
             where r.pw='$pw' and r.pb='$pb' and r.rid='$rid'");
         $sgf = href("sgf/" . htmlentities($result['sgf']));
-        echo "<h3>" . $result['white'] . "(W) vs. " . $result['black'] . "(B)</h3>";
+        echo "<h3>" . $result['white'] . " (W) vs. " . $result['black'] . " (B)</h3>";
         echo "<p><a href='$sgf'>Download .SGF</a></p>";
         echo "<div class='eidogo-player-auto' sgf='$sgf'>";
         insert_footer();
@@ -222,10 +222,10 @@ class Site {
             date_format(ends, '%c/%e')) as date_range, r.*, b.name as band
             from rounds r join bands b on r.bid=b.bid
             where rid='$rid'");
-        $players = fetch_rows("select p.pid, p.name, pr.pid as in_round
+        $players = fetch_rows("select distinct p.pid, p.name, pr.pid as in_round
             from players p join players_to_bands pb
             on p.pid=pb.pid and pb.bid='" . $round['bid'] . "'
-            left join players_to_rounds pr on p.pid=pr.pid
+            left join players_to_rounds pr on p.pid=pr.pid and pr.rid='$rid'
             order by p.name");
         insert_header("Round: " . $round['date_range'] . ", Band " . $round['band']);
         echo "<p>Players:</p>";

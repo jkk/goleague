@@ -6,17 +6,27 @@ function connect($host, $user, $pass) {
     mysql_select_db("emptysky", $dbc);
 }
 
-// Dispatch to a phtml page or to a Site method or die
+// Dispatch to a phtml page or to a class method or die
 function dispatch($site_class) {
     $in_path = $_REQUEST['path'];
     $path = array_map("pacify_path", explode("/", $in_path));
     if (!$path[0]) $method = "home";
     else $method = $path[0];
     $params = count($path) == 1 ? null : array_slice($path, 1);
+    
+    // .phtml page?
     if (file_exists($method . ".phtml")) {
         include($method . ".phtml");
         return;
     }
+    
+    // Special method suffixes for defined resources:
+    //      foobars -- browse
+    //      foobars/add (GET) -- add_form
+    //      foobars/add (POST) -- add
+    //      foobars/123 -- view
+    //      foobars/123/edit (GET) -- edit_form
+    //      foobars/123/edit (POST) -- edit
     $vars = get_class_vars($site_class);
     $resources = either($vars['resources'], array());
     $res_len = 0;
@@ -27,13 +37,6 @@ function dispatch($site_class) {
             $params = array_slice($path, $res_len);
         }
     }
-    // Special method suffixes for defined resources:
-    //      foobars -- browse
-    //      foobars/add (GET) -- add_form
-    //      foobars/add (POST) -- add
-    //      foobars/123 -- view
-    //      foobars/123/edit (GET) -- edit_form
-    //      foobars/123/edit (POST) -- edit
     if ($res_len) {
         if (!$params)
             $method .= "_browse";
@@ -52,6 +55,22 @@ function dispatch($site_class) {
         else
             $method .= "_view";
     }
+    
+    // Password protection
+    $protected = either($vars['protected'], array());
+    foreach ($protected as $protected_path => $auth) {
+        $is_protected = strpos($in_path, $protected_path) === 0;
+        $is_authed = $auth['username'] == $_SERVER['PHP_AUTH_USER'] &&
+            $auth['password'] == $_SERVER['PHP_AUTH_PW'];
+        if ($is_protected && !$is_authed) {
+            header('WWW-Authenticate: Basic realm="' . SITE_NAME . ' Admin"');
+            header('HTTP/1.0 401 Unauthorized');
+            echo "Sod off.";
+            exit;
+        }
+    }
+    
+    // Hand off to class method
     if (!method_exists($site_class, $method)) {
         die("WTF is \"" . htmlentities($method) . "\"?");
     } else {

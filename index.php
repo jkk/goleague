@@ -18,6 +18,9 @@ class Site {
         "admin/bands",
         "admin/rounds",
         "admin/players");
+        
+    var $protected = array(
+        "admin" => array("username" => "emptysky", "password" => "xxx"));
     
     function standings() {
         insert_header("Player Standings");

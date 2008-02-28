@@ -15,6 +15,7 @@ class Site {
     
     var $resources = array(
         "players",
+        "results",
         "admin/bands",
         "admin/rounds",
         "admin/players");
@@ -24,15 +25,11 @@ class Site {
     
     function standings() {
         insert_header("Player Standings");
-        echo "<p>blah</p>";
+        
         insert_footer();
     }
     
     function archive() {
-        
-    }
-    
-    function report() {
         
     }
     
@@ -42,13 +39,101 @@ class Site {
             browse_table("select pid, name as player from players order by name", "players/"));
     }
     
+    function rounds($rid, $action, $subaction) {
+        if ($action == "players" && $subaction == "select") {
+            $players = fetch_rows("select p.pid, p.name
+                from players p join players_to_rounds pr on p.pid=pr.pid and pr.rid='$rid'
+                order by name");
+            echo get_select($players, "{pids}", "pid", "name", "[Select a player...]");
+        }
+    }
+    
+    function results_browse() {
+        insert_header("Results");
+        echo browse_table("select '#', r.result, pw.name as white, pb.name as black, report_date as date
+            from results r join players pw on r.pw=pw.pid
+            join players pb on r.pb=pb.pid
+            order by report_date desc");
+        insert_footer();
+    }
+    
+    function results_add_form($action) {
+        insert_header("Report Result");
+        ?>
+        <form action="<?=href("results/add")?>" method="post" enctype="multipart/form-data">
+            <div>Round:</div>
+        <?php
+            $rounds = fetch_rows("select r.rid, concat_ws('', date_format(r.begins, '%c/%e'), ' - ',
+                date_format(r.ends, '%c/%e'), ', Band ', b.name) as round, r.bid
+                from rounds r join bands b on r.bid=b.bid
+                order by b.name");
+            // Show one round per band
+            $latest_rounds = array();
+            $bids = array();
+            foreach ($rounds as $round) {
+                if (!in_array($round['bid'], $bids)) {
+                    $latest_rounds[] = $round;
+                    $bids[] = $round['bid'];
+                }
+            }
+            echo get_select($latest_rounds, "rid", "rid", "round", "[Select a round...]");
+        ?>
+            <div>White player:</div>
+            <span id='pw-shell'>
+            <select id='pw' name='pw'><option value=''>[Select a round]</option></select>
+            </span>
+            
+            <div>Black player:</div>
+            <span id='pb-shell'>
+            <select id='pb' name='pb'><option value=''>[Select a round]</option></select>
+            </span>
+            
+            <div>Result:</div>
+            <select id='result' name='result'>
+                <option value='W+'>White won</option>
+                <option value='B+'>Black won</option>
+                <option value='NR'>No result</option>
+            </select>
+            
+            <div>SGF:</div>
+            <input type="file" name="sgf">
+            
+            <input type='submit' value='Submit'>
+        </form>
+        <script>
+        $("#rid").bind("change", function() {
+            $.get("../rounds/" + this.value + "/players/select", null, function(html) {
+                $("#pw-shell").html(html.replace(/\{pids\}/g, "pw"));
+                $("#pb-shell").html(html.replace(/\{pids\}/g, "pb"));
+            });
+        });
+        </script>
+        <?php
+        insert_footer();
+    }
+    
+    function results_add($values) {
+        if ($_FILES['sgf'] && $_FILES['sgf']['error'] == 0) {
+            move_uploaded_file($_FILES['sgf']['tmp_name'], "sgf/" . $_FILES['sgf']['name']);
+            chmod("sgf/" . $_FILES['sgf']['name'], 0777);
+        }
+        insert_row("results", array(
+            "rid" => $values['rid'],
+            "pw" => $values['pw'],
+            "pb" => $values['pb'],
+            "result" => $values['result'],
+            "sgf" => $_FILES['sgf']['name'],
+            "report_date" => "now()"));
+        redir("results", true);
+    }
+    
     function admin() {
         insert_content(
             "League Admin",
             "<ul>
                 <li><a href='" . href("admin/bands") . "'>Bands</a></li>
                 <li><a href='" . href("admin/rounds") . "'>Rounds</a></li>
-                <li><a href='" . href("report") . "'>Report Result</a></li>
+                <li><a href='" . href("results/add") . "'>Report Result</a></li>
             </ul>");
     }
     
@@ -151,14 +236,10 @@ class Site {
         ?>
         <form action='<?=href("admin/rounds/add")?>' method='post'>
         <div>Band:</div>
-        <select id='bid' name="bid">
-        <option value=''>[Select a band...]</option>
         <?php
             $bands = fetch_rows("select bid, name from bands order by name");
-            foreach ($bands as $band)
-                echo "<option value='" . $band['bid'] . "'>" . $band['name'] . "</option>";
+            get_select($bands, "bid", "bid", "name", "[Select a band...]");
         ?>
-        </select>
         <div>Begin date:</div>
         <input type="text" name="begins" size="10"> <span>YYYY-MM-DD</span>
         <div>End date:</div>
@@ -210,20 +291,6 @@ class Site {
 }
 
 // Helper functions
-
-function get_checkboxes($rows, $name, $value, $text, $checked_field="") {
-    if (!$checked_field) $checked_field = $value;
-    $retval = "";
-    foreach ($rows as $row) {
-        $retval .= "<div>" .
-            "<input name='${name}[]' type='checkbox' id='cb-" . $row[$value] . "'" .
-                " value='" . $row[$value] . "' " .
-                ($row[$checked_field] ? "checked" : "") . "> " .
-            "<label for='cb-" . $row[$value] . "'>" . $row[$text] . "</label>" .
-            "</div>";
-    }
-    return $retval;
-}
 
 function insert_new_players($bid, $input) {
     $new_players = preg_split("/(\r\n|\r|\n)/", $input);

@@ -127,7 +127,7 @@ function insert_content($title, $content) {
 
 // Return a table for all rows from a query, hyperlinking to the first col
 // with the name of the second col
-function browse_table($select, $base_href) {
+function browse_table($select, $base_href="") {
     $rows = fetch_rows($select);
     if (!count($rows))
         return "<p><i>None</i></p>\n";
@@ -176,7 +176,8 @@ function get_safe_values($values) {
     $safe_keys = array_map("mysql_real_escape_string", array_keys($values));
     $safe_values = array();
     foreach (array_values($values) as $value)
-        $safe_values[] = "'" . mysql_real_escape_string($value) . "'";
+        $safe_values[] = ($value == "now()" ? "now()" :
+            "'" . mysql_real_escape_string($value) . "'");
     return array($safe_keys, $safe_values);
 }
 
@@ -204,5 +205,31 @@ function delete_rows($table, $where="") {
         ($where ? " where $where" : "");
     @mysql_query($query);
 }
+
+function get_checkboxes($rows, $name, $value, $text, $checked_field="") {
+    if (!$checked_field) $checked_field = $value;
+    $retval = "";
+    foreach ($rows as $row) {
+        $retval .= "<div>" .
+            "<input name='${name}[]' type='checkbox' id='cb-" . $row[$value] . "'" .
+                " value='" . $row[$value] . "'" .
+                ($row[$checked_field] ? " checked" : "") . "> " .
+            "<label for='cb-" . $row[$value] . "'>" . $row[$text] . "</label>" .
+            "</div>";
+    }
+    return $retval;
+}
+
+function get_select($rows, $name, $value, $text, $default="", $selected_field="") {
+    echo "<select id='$name' name='$name'>";
+    if ($default)
+        echo "<option value=''>$default</option>";
+    foreach ($rows as $row)
+        echo "<option value='" . $row[$value] . "'" .
+            ($row[$selected_field] ? " selected" : "") . ">" .
+            $row[$text] . "</option>";
+    echo "</select>";
+}
+
 
 ?>

@@ -29,5 +29,7 @@ create table results (
     pb int not null,
     rid int not null,
     result char(2),
+    sgf varchar(255),
+    report_date datetime,
     primary key(pw, pb, round)
 );

@@ -91,8 +91,8 @@ function pacify_path($path) {
     return strtolower(preg_replace("/[^a-zA-Z0-9-]/", "", $path));
 }
 
-function redir($path) {
-    header("location: " . URL_ROOT . $path);
+function redir($path, $show_feedback=false) {
+    header("location: " . URL_ROOT . $path . ($show_feedback ? "?success=1" : ""));
     exit;
 }
 
@@ -110,6 +110,9 @@ function insert_header($title=null) {
         echo "</div>";
     }
     if ($title) echo "<h2>$title</h2>";
+    if ($_REQUEST['success']) {
+        echo "<p id='feedback'>Success!</p>";
+    }
 }
 
 function insert_footer() {
@@ -156,6 +159,7 @@ function browse_table($select, $base_href) {
 
 function fetch_row($select) {
     $res = @mysql_query($select);
+    if (!$res) return null;
     return mysql_fetch_array($res, MYSQL_ASSOC);
 }
 
@@ -192,6 +196,12 @@ function update_row($table, $values, $where) {
         $query .= $safe_keys[$i] . "=" . $safe_values[$i] . ", ";
     $query = preg_replace("/, $/", "", $query);
     $query .= " where $where";
+    @mysql_query($query);
+}
+
+function delete_rows($table, $where="") {
+    $query = "delete from `" . mysql_real_escape_string($table) . "`" .
+        ($where ? " where $where" : "");
     @mysql_query($query);
 }
 

@@ -227,14 +227,15 @@ function get_checkboxes($rows, $name, $value, $text, $checked_field="") {
 }
 
 function get_select($rows, $name, $value, $text, $default="", $selected_field="") {
-    echo "<select id='$name' name='$name'>";
+    $retval = "<select id='$name' name='$name'>";
     if ($default)
-        echo "<option value=''>$default</option>";
+        $retval .= "<option value=''>$default</option>";
     foreach ($rows as $row)
-        echo "<option value='" . $row[$value] . "'" .
+        $retval .= "<option value='" . $row[$value] . "'" .
             ($row[$selected_field] ? " selected" : "") . ">" .
             $row[$text] . "</option>";
-    echo "</select>";
+    $retval .= "</select>";
+    return $retval;
 }
 
 function strip_recursive(&$var) {

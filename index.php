@@ -24,12 +24,12 @@ dispatch("Site");
 class Site {
     
     var $resources = array(
+        "results",
         "players",
         "rounds",
-        "results",
-        "admin/bands",
+        "admin/results",
         "admin/rounds",
-        "admin/players");
+        "admin/bands");
         
     var $protected = array(
         "admin" => array("username" => USERNAME, "password" => PASSWORD));
@@ -84,61 +84,30 @@ class Site {
     // Display a game's SGF using EidoGo
     function results_view($ids) {
         list($rid, $pw, $pb) = split("-", $ids);
-        insert_header();
         $result = fetch_row("select r.result, pw.name as white, pb.name as black,
             r.sgf, r.report_date as date
             from results r join players pw on r.pw=pw.pid
             join players pb on r.pb=pb.pid 
             where r.pw='$pw' and r.pb='$pb' and r.rid='$rid'");
         $sgf = href("sgf/" . htmlentities($result['sgf']));
-        echo "<h3>" . $result['white'] . " (W) vs. " . $result['black'] . " (B)</h3>";
+        insert_header($result['white'] . " (W) vs. " . $result['black'] . " (B)");
         echo "<p><a href='$sgf'>Download .SGF</a></p>";
         echo "<div class='eidogo-player-auto' sgf='$sgf'>";
         insert_footer();
     }
     
     // Add a new game result
-    function results_add_form($action) {
+    function results_add_form() {
         insert_header("Report Result");
-        ?>
-        <form action="<?=href("results/add")?>" method="post" enctype="multipart/form-data">
-            <div>Round:</div>
-        <?php
-            $latest_rounds = get_latest_rounds();
-            echo get_select($latest_rounds, "rid", "rid", "round", "[Select a round...]");
-        ?>
-            <div>White player:</div>
-            <span id='pw-shell'>
-            <select id='pw' name='pw'><option value=''>[Select a round]</option></select>
-            </span>
-            
-            <div>Black player:</div>
-            <span id='pb-shell'>
-            <select id='pb' name='pb'><option value=''>[Select a round]</option></select>
-            </span>
-            
-            <div>Result:</div>
-            <select id='result' name='result'>
-                <option value='W+'>White won</option>
-                <option value='B+'>Black won</option>
-                <option value='NR'>No result</option>
-            </select>
-            
-            <div>SGF:</div>
-            <input type="file" name="sgf">
-            
-            <input type='submit' value='Submit'>
-        </form>
-        <script>
-        $("#rid").bind("change", function() {
-            $.get("../rounds-players-select/" + this.value, null, function(html) {
-                $("#pw-shell").html(html.replace(/\{pids\}/g, "pw"));
-                $("#pb-shell").html(html.replace(/\{pids\}/g, "pb"));
-            });
-        });
-        </script>
-        <?php
+        result_form("results/add");
         insert_footer();
+    }
+    
+    // Save a game result's SGF and insert details into the DB
+    function results_add($values) {
+        save_result($values, true);
+        redir("rounds/" . $values['rid'], true,
+            "<a href='" . href("results/add") . "'>Add another result?</a>");
     }
     
     // Spit out a <select> element of players for a given round
@@ -149,33 +118,15 @@ class Site {
         echo get_select($players, "{pids}", "pid", "name", "[Select a player...]");
     }
     
-    // Save a game result's SGF and insert details into the DB
-    function results_add($values) {
-        $sgf = "";
-        if ($_FILES['sgf'] && $_FILES['sgf']['error'] == 0) {
-            $sgf = $values['rid'] . "-" . $_FILES['sgf']['name'];
-            move_uploaded_file($_FILES['sgf']['tmp_name'], "sgf/" . $sgf);
-            chmod("sgf/" . $sgf, 0777);
-        }
-        insert_row("results", array(
-            "rid" => $values['rid'],
-            "pw" => $values['pw'],
-            "pb" => $values['pb'],
-            "result" => $values['result'],
-            "sgf" => $sgf,
-            "report_date" => "now()"));
-        redir("rounds/" . $values['rid'], true,
-            "<a href='" . href("results/add") . "'>Add another result?</a>");
-    }
-    
     // Admin front page
     function admin() {
         insert_content(
             "Admin",
             "<ul>
-                <li><a href='" . href("results/add") . "'>Report Result</a></li>
-                <li><a href='" . href("admin/rounds") . "'>Rounds</a></li>
-                <li><a href='" . href("admin/bands") . "'>Bands</a></li>
+                <li><a href='" . href("results/add") . "'>Report Game Result</a></li>
+                <li><a href='" . href("admin/results") . "'>Manage Game Results</a></li>
+                <li><a href='" . href("admin/rounds") . "'>Manage Rounds</a></li>
+                <li><a href='" . href("admin/bands") . "'>Manage Bands</a></li>
             </ul>");
     }
     
@@ -295,7 +246,7 @@ class Site {
         <div>Band:</div>
         <?php
             $bands = fetch_rows("select bid, name from bands order by name");
-            get_select($bands, "bid", "bid", "name", "[Select a band...]");
+            echo get_select($bands, "bid", "bid", "name", "[Select a band...]");
         ?>
         <div>Begin date:</div>
         <input type="text" name="begins" size="10"> <span>YYYY-MM-DD</span>
@@ -339,6 +290,30 @@ class Site {
         redir("admin/rounds", true);
     }
     
+    function admin_results_browse() {
+        insert_header("Game Results");
+        echo browse_table("select concat(r.rid, '-', pw, '-', pb), r.result,
+                pw.name as white, pb.name as black, report_date as date
+                from results r join players pw on r.pw=pw.pid
+                join players pb on r.pb=pb.pid
+                order by report_date desc",
+            "admin/results/");
+        insert_footer();
+    }
+    
+    function admin_results_view($ids) {
+        list($rid, $pw, $pb) = split("-", $ids);
+        insert_header("Edit Game Result");
+        $result = fetch_row("select pw, pb, rid, result, sgf, report_date
+            from results where pw='$pw' and pb='$pb' and rid='$rid'");
+        result_form("admin/results/$ids/edit", $result);
+        insert_footer();
+    }
+    
+    function admin_results_edit($ids, $values) {
+        save_result($values);
+        redir("admin/results", true);
+    }
 }
 
 
@@ -454,6 +429,89 @@ function insert_new_players($bid, $input) {
         $pid = insert_row("players", array("name" => $new_player));
         insert_row("players_to_bands", array("pid" => $pid, "bid" => $bid));
     }
+}
+
+// Spit out form to edit result
+function result_form($action, $values=array()) {
+    ?>
+    <form action="<?=href($action)?>" method="post" enctype="multipart/form-data">
+        <div>Round:</div>
+    <?php
+        $rounds = fetch_rows("select r.rid, concat_ws('', 'Band ', b.name, ', ',
+            date_format(r.begins, '%c/%e'), ' - ', date_format(r.ends, '%c/%e')) as round,
+            r.rid='" . $values['rid'] . "' as selected
+            from rounds r join bands b on r.bid=b.bid
+            order by r.begins desc");
+        echo get_select($rounds, "rid", "rid", "round", "[Select a round...]", "selected");
+        if ($values['pw'] && $values['pb']) {
+            $pw = get_select(fetch_rows("select pid, name, pid='" . $values['pw'] . "' as selected
+                from players order by name"), "pw", "pid", "name",
+                "[Select a player...]", "selected");
+            $pb = get_select(fetch_rows("select pid, name, pid='" . $values['pb'] . "' as selected
+                from players order by name"), "pb", "pid", "name",
+                "[Select a player...]", "selected");
+        } else {
+            $pw = "<select id='pw' name='pw'><option value=''>[Select a round]</option></select>";
+            $pb = "<select id='pb' name='pb'><option value=''>[Select a round]</option></select>";
+        }
+    ?>
+        <div>White player:</div>
+        <span id='pw-shell'>
+        <?=$pw?>
+        </span>
+        
+        <div>Black player:</div>
+        <span id='pb-shell'>
+        <?=$pb?>
+        </span>
+        
+        <div>Result:</div>
+        <select id='result' name='result'>
+            <option value='W+'<?=($values['result'] == "W+" ? "selected" : "")?>>White won</option>
+            <option value='B+'<?=($values['result'] == "B+" ? "selected" : "")?>>Black won</option>
+            <option value='NR'<?=($values['result'] == "NR" ? "selected" : "")?>>No result</option>
+        </select>
+        
+        <div>SGF:</div>
+        <?php
+            if ($values['sgf'])
+                echo "<a href='" . href("sgf/" . htmlentities($values['sgf'])) . "'>".
+                    htmlentities($values['sgf']) . "</a><br>";
+        ?>
+        <input type="file" name="sgf">
+        
+        <input type='submit' value='Submit'>
+    </form>
+    <script>
+    $("#rid").bind("change", function() {
+        $.get("../rounds-players-select/" + this.value, null, function(html) {
+            $("#pw-shell").html(html.replace(/\{pids\}/g, "pw"));
+            $("#pb-shell").html(html.replace(/\{pids\}/g, "pb"));
+        });
+    });
+    </script>
+    <?php
+}
+
+// Insert or update result info as appropriate
+function save_result($values, $insert=false) {
+    list($pw, $pb, $rid) = array($values['pw'], $values['pb'], $values['rid']);
+    $db_values = array(
+        "rid" => $rid,
+        "pw" => $pw,
+        "pb" => $pb,
+        "result" => $values['result'],
+        "report_date" => "now()");
+    if ($_FILES['sgf'] && $_FILES['sgf']['error'] == 0) {
+        $sgf = $values['rid'] . "-" . $_FILES['sgf']['name'];
+        move_uploaded_file($_FILES['sgf']['tmp_name'], "sgf/" . $sgf);
+        chmod("sgf/" . $sgf, 0777);
+        $db_values['sgf'] = $sgf;
+    }
+    if ($insert)
+        insert_row("results", $db_values);
+    else
+        update_rows("results", $db_values, "pw='$pw' and pb='$pb' and rid='$rid'");
 }
 
 ?>

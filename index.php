@@ -30,7 +30,7 @@ class Site {
             browse_table("select r.rid, concat_ws('', 'Band ', b.name, ', ',
                 date_format(r.begins, '%c/%e'), ' - ', date_format(r.ends, '%c/%e')) as round
                 from rounds r join bands b on r.bid=b.bid
-                order by b.name, r.begins",
+                order by b.name, r.begins desc",
                 "rounds/"));
     }
     

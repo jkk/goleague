@@ -426,7 +426,7 @@ function get_latest_rounds() {
     $rounds = fetch_rows("select r.rid, concat_ws('', 'Band ', b.name, ', ',
         date_format(r.begins, '%c/%e'), ' - ', date_format(r.ends, '%c/%e')) as round, r.bid
         from rounds r join bands b on r.bid=b.bid
-        order by b.name");
+        order by b.name, r.begins desc");
     // Show one round per band
     $latest_rounds = array();
     $bids = array();

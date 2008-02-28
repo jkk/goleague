@@ -164,15 +164,12 @@ class Site {
     
     function admin_bands_view($bid, $checkboxes=false) {
         $band = fetch_row("select * from bands where bid='$bid'");
-        $player_select = "select '', name as player
-            from players p join players_to_bands pb on p.pid=pb.pid and pb.bid='$bid'
-            order by name";
-        if ($checkboxes) {
-            echo get_checkboxes(fetch_rows($player_select), "pids", "pid", "player");
-            return;
-        }
         insert_header("Band: " . htmlentities($band['name']));
-        echo browse_table($player_select, "admin/players/");
+        echo browse_table(
+            "select '', p.name as player
+                from players p join players_to_bands pb on p.pid=pb.pid and pb.bid='$bid'
+                order by name",
+            "admin/players/");
         ?>
         <form action='<?=href("admin/bands/$bid/edit")?>' method='post'>
             Add players to this band (one name per line):<br>
@@ -271,7 +268,7 @@ class Site {
         (function() {
             function updateCheckboxes(bid) {
                 if (!bid) return;
-                $("#players").load("../bands/" + bid + "/checkboxes");
+                $("#players").load("../../bands-players-checkboxes/" + bid);
             }
             $("#bid").bind("change", function() { updateCheckboxes(this.value); });
             updateCheckboxes($("#bid")[0].value);
@@ -279,6 +276,13 @@ class Site {
         </script>
         <?php
         insert_footer();
+    }
+    
+    function bands_players_checkboxes($bid) {
+        $player_select = "select p.pid, p.name as player
+            from players p join players_to_bands pb on p.pid=pb.pid and pb.bid='$bid'
+            order by name";
+        echo get_checkboxes(fetch_rows($player_select), "pids", "pid", "player");
     }
     
     function admin_rounds_add($values) {

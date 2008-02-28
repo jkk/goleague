@@ -362,7 +362,7 @@ function get_result($rid, $results, $pid1, $pid2) {
             } elseif (($result['result'] == "W+" && $pid1 == $result['pw']) ||
                       ($result['result'] == "B+" && $pid1 == $result['pb'])) {
                 $presult = 1;
-                $retresult = $result['result'] == "W+" ? "B+" : "W+";
+                $retresult = $result['result'] == "W+" ? "B-" : "W-";
             } else {
                 $presult = 2;
                 $retresult = $result['result'];

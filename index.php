@@ -142,7 +142,7 @@ class Site {
             "result" => $values['result'],
             "sgf" => $sgf,
             "report_date" => "now()"));
-        redir("results", true);
+        redir("rounds/" . $values['rid'], true);
     }
     
     function admin() {

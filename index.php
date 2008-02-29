@@ -366,8 +366,9 @@ function result_matrix($rid) {
                 $wins++;
             $is_orphan = (in_array($px['pid'], $orphan_ids) || in_array($py['pid'], $orphan_ids));
             $is_self = $px['pid'] == $py['pid'];
-            $class = ($is_self || $is_orphan ? " class='x'" : "");
-            echo "<td$class>" . ($is_self ? "&nbsp;" : $result) . "</td>";
+            $class = ($is_self || $is_orphan ? "x " : "");
+            $class .= ($presult == 1 ? "loss" : ($presult == 2 ? "win" : ""));
+            echo "<td class='$class'>" . ($is_self ? "&nbsp;" : $result) . "</td>";
             $first_x = false;
         }
         echo "<td class='score'>$wins-$losses</td>";

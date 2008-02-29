@@ -8,9 +8,9 @@ include("util.php");
 
 define("SITE_NAME", "Empty Sky League");
 define("FILE_ROOT", dirname(__FILE__));
-define("HEADER_PATH", "../../new/header.phtml");
-define("FOOTER_PATH", "../../new/footer.phtml");
-define("URL_ROOT", "/league/new/");
+define("HEADER_PATH", "../new/header.phtml");
+define("FOOTER_PATH", "../new/footer.phtml");
+define("URL_ROOT", "/league/");
 define("USERNAME", "emptysky");
 define("PASSWORD", "xxx");
 

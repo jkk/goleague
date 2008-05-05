@@ -2,7 +2,9 @@ To install:
 
 - Create a MySQL database and import sql/create.sql
 - Create header and footer html pages
+- Make the sgf folder writable by the web server (or just chmod 777)
 - Copy conf.php.default to conf.php
 - Update conf.php with appropriate values
+- Customize phtml pages
 - Go to the admin section to create bands, players, and rounds
 - Email me at jkkramer@gmail.com if you have any questions

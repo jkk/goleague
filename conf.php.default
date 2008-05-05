@@ -2,7 +2,7 @@
 
 define("SITE_NAME", "Empty Sky League");
 define("FILE_ROOT", dirname(__FILE__));
-define("HEADER_PATH", "header.phtml"); // Must include jQuery
+define("HEADER_PATH", "header.phtml"); // Must include jQuery and EidoGo
 define("FOOTER_PATH", "footer.phtml");
 define("URL_ROOT", "/league/");
 define("DB_USERNAME", "xxx");

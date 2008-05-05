@@ -1,0 +1,15 @@
+<?php
+
+define("SITE_NAME", "Empty Sky League");
+define("FILE_ROOT", dirname(__FILE__));
+define("HEADER_PATH", "header.phtml"); // Must include jQuery
+define("FOOTER_PATH", "footer.phtml");
+define("URL_ROOT", "/league/");
+define("DB_USERNAME", "xxx");
+define("DB_PASSWORD", "xxx");
+define("DB_HOST", "localhost");
+define("DB_NAME", "emptysky");
+define("ADMIN_USERNAME", "xxx");
+define("ADMIN_PASSWORD", "xxx");
+
+?>

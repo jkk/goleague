@@ -1,24 +1,13 @@
 <?php
 
 include("util.php");
+include("conf.php");
 
-//////////////////////////////////////////////////////////////////////////////
-// Config
-//////////////////////////////////////////////////////////////////////////////
-
-define("SITE_NAME", "Empty Sky League");
-define("FILE_ROOT", dirname(__FILE__));
-define("HEADER_PATH", "../new/header.phtml");
-define("FOOTER_PATH", "../new/footer.phtml");
-define("URL_ROOT", "/league/");
-define("USERNAME", "emptysky");
-define("PASSWORD", "xxx");
-
-connect("localhost", "emptysky", USERNAME, PASSWORD);
+connect(DB_HOST, DB_NAME, DB_USERNAME, DB_PASSWORD);
 dispatch("Site");
 
 //////////////////////////////////////////////////////////////////////////////
-// Site pages/actions
+// Site pages/actions (see below for helper functions)
 //////////////////////////////////////////////////////////////////////////////
 
 class Site {
@@ -32,7 +21,7 @@ class Site {
         "admin/bands");
         
     var $protected = array(
-        "admin" => array("username" => USERNAME, "password" => PASSWORD));
+        "admin" => array("username" => ADMIN_USERNAME, "password" => ADMIN_PASSWORD));
     
     // Show all rounds
     function rounds_browse() {

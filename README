@@ -1,0 +1,8 @@
+To install:
+
+- Create a MySQL database and import sql/create.sql
+- Create header and footer html pages
+- Copy conf.php.default to conf.php
+- Update conf.php with appropriate values
+- Go to the admin section to create bands, players, and rounds
+- Email me at jkkramer@gmail.com if you have any questions

@@ -57,6 +57,10 @@ function dispatch($site_class) {
     }
     
     // Password protection
+    if (!$_SERVER['PHP_AUTH_USER']) {
+        $auth_data = base64_decode(substr($_SERVER['REDIRECT_REMOTE_USER'], 6));
+        list($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']) = explode(':', $auth_data);
+    }
     $protected = either($vars['protected'], array());
     foreach ($protected as $protected_path => $auth) {
         $is_protected = strpos($in_path, $protected_path) === 0;

@@ -4,3 +4,4 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ index.php?path=$1 [QSA,L]
 AddType application/x-go-sgf sgf
+RewriteRule .* - [E=REMOTE_USER:%{HTTP:Authorization},L]

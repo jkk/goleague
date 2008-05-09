@@ -58,7 +58,8 @@ function dispatch($site_class) {
     
     // Password protection
     if (!$_SERVER['PHP_AUTH_USER']) {
-        $auth_data = base64_decode(substr($_SERVER['REDIRECT_REMOTE_USER'], 6));
+        $auth_data = either($_SERVER['REDIRECT_REMOTE_USER'], $_SERVER['REMOTE_USER']);
+        $auth_data = base64_decode(substr($auth_data, 6));
         list($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']) = explode(':', $auth_data);
     }
     $protected = either($vars['protected'], array());
@@ -76,7 +77,7 @@ function dispatch($site_class) {
     
     // Hand off to class method
     $method = str_replace("-", "_", $method);
-    if (!method_exists($site_class, $method)) {
+    if (!in_array($method, get_class_methods($site_class))) {
         die("WTF is \"" . htmlentities($method) . "\"?");
     } else {
         call_user_func_array(array('Site', $method), $params);

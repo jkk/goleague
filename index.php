@@ -1,6 +1,7 @@
 <?php
 /*
 TODO:
+    - link to multiple bands
     - google analytics
 */
 
@@ -26,6 +27,16 @@ class Site {
         
     var $protected = array(
         "admin" => array("username" => ADMIN_USERNAME, "password" => ADMIN_PASSWORD));
+    
+    // Show results for all rounds in a band
+    function band_matrix($bid=null) {
+        if (!$bid)
+            $bid = fetch_result("select max(bid) from bands");
+        $band = fetch_row("select * from bands where bid='$bid'");
+        head($band['name']);
+        result_matrix_band($bid);
+        foot();
+    }
     
     // Show all rounds
     function rounds_browse() {
@@ -56,16 +67,6 @@ class Site {
             echo "<h3>" . $round['round'] . "</h3>";
             echo result_matrix_round($rid);
         }
-        foot();
-    }
-    
-    // Show results for all rounds in a band
-    function band_matrix($bid=null) {
-        if (!$bid)
-            $bid = fetch_result("select max(bid) from bands");
-        $band = fetch_row("select * from bands where bid='$bid'");
-        head($band['name']);
-        result_matrix_band($bid);
         foot();
     }
 
@@ -477,7 +478,7 @@ function result_matrix_band($bid) {
     
     if ($_GET['sort'] == "player") {
         usort($result_matrix, create_function('$a, $b',
-            'return strcasecmp($a[0]["name"], $b[0]["name"]);'));
+            'return ($a[0]["num"] > $b[0]["num"]);'));
     } else {
         usort($result_matrix, create_function('$a, $b',
             'return ($a[0]["wins"] < $b[0]["wins"]);'));
@@ -500,11 +501,15 @@ function result_matrix_band($bid) {
         $first_x = true;
         foreach ($row as $col) {
             if ($first_x) {
-                echo "<th class='top'>" . $col['name'] . " (" . $col['num'] . ")</th>";
+                echo "<th class='top'>" . $col['name'] . " &ndash; ". $col['num'] . "</th>";
             } else {
                 $class = (strpos($col, "+") === false ?
                     (strpos($col, "-") !== false ? "loss" : "") :
                     "win");
+                if ($col == "x") {
+                    $class = "x";
+                    $col = "&nbsp;";
+                }
                 echo "<td class='$class'>" . $col . "</td>";
             }
             $first_x = false;

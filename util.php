@@ -183,6 +183,12 @@ function fetch_rows($select) {
     return $rows;
 }
 
+function fetch_result($select, $row=0, $field=0) {
+    $res = @mysql_query($select);
+    if (!$res) return null;
+    return mysql_result($res, $row, $field);
+}
+
 function get_safe_values($values) {
     $safe_keys = array_map("mysql_real_escape_string", array_keys($values));
     $safe_values = array();

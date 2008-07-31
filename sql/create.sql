@@ -1,6 +1,7 @@
 create table players (
     pid int not null auto_increment primary key,
     status enum('active', 'inactive') not null default 'active',
+    num int,
     name varchar(255)
 );
 create table bands (
@@ -16,6 +17,7 @@ create table players_to_bands(
 create table rounds (
     rid int not null auto_increment primary key,
     bid int not null,
+    name varchar(100),
     begins date,
     ends date
 );
@@ -31,5 +33,6 @@ create table results (
     result char(2),
     sgf varchar(255),
     report_date datetime,
+    points int,
     primary key(pw, pb, rid)
 );

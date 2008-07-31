@@ -1,11 +1,7 @@
 <?php
 /*
 TODO:
-    - sgf link
-    - delete or rename players
-    - sort by score or name
-    - link to new matrix
-    - update band_matrix report titles
+    - google analytics
 */
 
 include("util.php");
@@ -50,7 +46,7 @@ class Site {
             $latest_rounds = get_latest_rounds();
             foreach ($latest_rounds as $round) {
                 echo "<h3>" . $round['round'] . "</h3>";
-                echo result_matrix($round['rid']);
+                echo result_matrix_round($round['rid']);
             }
         } else {
             $round = fetch_row("select concat_ws('', b.name, ', ',
@@ -58,95 +54,18 @@ class Site {
                 from rounds r join bands b on r.bid=b.bid
                 where r.rid='$rid'");
             echo "<h3>" . $round['round'] . "</h3>";
-            echo result_matrix($rid);
+            echo result_matrix_round($rid);
         }
         foot();
     }
     
+    // Show results for all rounds in a band
     function band_matrix($bid=null) {
-        head("Band Results");
-        $where = ($bid ? "where b.bid='$bid'" : "");
-        $rounds = fetch_rows("select r.rid, r.name, concat_ws('', b.name, ', ',
-            if(r.begins, concat_ws('', date_format(r.begins, '%c/%e'), ' - ', date_format(r.ends, '%c/%e')), r.name)) as round
-            from rounds r join bands b on r.bid=b.bid
-            $where
-            order by b.name, r.begins desc",
-            "rounds/");
-        
-        $result_matrix = array();
-        
-        $player_rows = fetch_rows("select p.pid, p.name, p.num
-            from players p join players_to_bands pb on p.pid=pb.pid and pb.bid='$bid'");
-        $players = array();
-        foreach ($player_rows as $player_row) {
-            $players[$player_row['pid']] = $player_row;
-        }
-        $results = fetch_rows("select re.* from results re join rounds ro on re.rid=ro.rid
-            where ro.bid='$bid'");
-        
-        foreach ($players as $player) {
-            $row = array();
-            $wins = 0;
-            $losses = 0;
-            foreach ($rounds as $round) {
-                $col_result = null;
-                foreach ($results as $result) {
-                    if ($result['rid'] != $round['rid'])
-                        continue;
-                    $py = $player['pid'];
-                    if ($result['pw'] == $py)
-                        $px = $result['pb'];
-                    else if ($result['pb'] == $py)
-                        $px = $result['pw'];
-                    else
-                        continue;
-                    list($summary, $winloss) = get_result($result['rid'], $results, $px, $py);
-                    $opp_num = $players[$px]['num'];
-                    if ($winloss == 1) {
-                        $col_result = "${opp_num}-";
-                        $losses++;
-                    } elseif ($winloss == 2) {
-                        $col_result = "${opp_num}+";
-                        $wins++;
-                    }
-                }
-                $row[] = either($col_result, "x");
-            }
-            $player['wins'] = $wins;
-            $player['losses'] = $losses;
-            array_unshift($row, $player);
-            $result_matrix[] = $row;
-        }
-        
-        echo "<table class='result-matrix'>";
-        echo "<tr><th>&nbsp;</th>";
-        foreach ($rounds as $round) {
-            echo "<th class='top'>" . $round['name'] . "</th>";
-        }
-        echo "<th class='score'>Wins/Losses</th></tr>";
-        
-        $first_y = true;
-        $first_x = true;
-
-        foreach ($result_matrix as $row) {
-            echo "<tr>";
-            $first_x = true;
-            foreach ($row as $col) {
-                if ($first_x) {
-                    echo "<th>" . $col['name'] . " (" . $col['num'] . ")</th>";
-                } else {
-                    $class = (strpos($col, "+") === false ?
-                        (strpos($col, "-") !== false ? "loss" : "") :
-                        "win");
-                    echo "<td class='$class'>" . $col . "</td>";
-                }
-                $first_x = false;
-            }
-            echo "<td class='score'>" . $row[0]['wins'] . "-" . $row[0]['losses'] . "</td>";
-            echo "</tr>";
-            $first_y = false;
-        }
-        echo "</table>";
+        if (!$bid)
+            $bid = fetch_result("select max(bid) from bands");
+        $band = fetch_row("select * from bands where bid='$bid'");
+        head($band['name']);
+        result_matrix_band($bid);
         foot();
     }
 
@@ -162,7 +81,7 @@ class Site {
     }
     
     function results_browse() {
-        redir("rounds/current");
+        redir("band-matrix");
     }
     
     // Display a game's SGF using EidoGo
@@ -176,7 +95,7 @@ class Site {
         $sgf = href("sgf/" . htmlentities($result['sgf']));
         head($result['white'] . " (W) vs. " . $result['black'] . " (B)");
         echo "<p><a href='$sgf'>Download .SGF</a></p>";
-        echo "<div class='eidogo-player-auto' sgf='$sgf'>";
+        echo "<div class='eidogo-player-auto' sgf='$sgf'></div>";
         foot();
     }
     
@@ -228,18 +147,46 @@ class Site {
         $band = fetch_row("select * from bands where bid='$bid'");
         head("Band: " . htmlentities($band['name']));
         echo browse_table(
-            "select '', p.name as player, p.num
+            "select p.pid, p.name as player, p.num
                 from players p join players_to_bands pb on p.pid=pb.pid and pb.bid='$bid'
-                order by name",
-            "admin/players/");
+                order by name");
         ?>
         <form action='<?=href("admin/bands/$bid/edit")?>' method='post'>
             Add players to this band (one name per line):<br>
             <textarea name="new_players"></textarea><br>
             <input type="submit" value="Add Players">
         </form>
+        <script>
+        (function() {
+            $(".browse-table td:first-child").each(function(i, td) {
+                var delbtn = document.createElement("a");
+                delbtn.className = "del-player";
+                delbtn.innerHTML = "&times;";
+                delbtn.href = "#";
+                td.appendChild(delbtn);
+                $(delbtn).click(function() {
+                    var sure = confirm("Are you sure you want to delete that player?");
+                    if (!sure)
+                        return;
+                    var pid = td.getAttribute("data-col1");
+                    $.post("<?=href("admin-player-delete")?>", {pid: pid}, function() {
+                        var tr = td.parentNode;
+                        tr.parentNode.removeChild(tr);
+                    });
+                });
+            });
+        })();
+        </script>
         <?php
         foot();
+    }
+    
+    // Delete a player
+    function admin_player_delete() {
+        $pid = (int)$_POST['pid'];
+        delete_rows("players", "pid='$pid'");
+        delete_rows("players_to_bands", "pid='$pid'");
+        delete_rows("players_to_rounds", "pid='$pid'");
     }
     
     // Add new players to a band
@@ -414,7 +361,7 @@ class Site {
 //////////////////////////////////////////////////////////////////////////////
 
 // Show a table of all game results for a given round
-function result_matrix($rid) {
+function result_matrix_round($rid) {
     $players_x = fetch_rows("select p.pid, p.name
         from players p join players_to_rounds pr on p.pid=pr.pid and pr.rid='$rid'");
     // Include players no longer assigned to the round but that have results
@@ -432,8 +379,7 @@ function result_matrix($rid) {
         }
     }
     usort($players_x, create_function('$a, $b', 'return strcmp($a["name"], $b["name"]);'));
-    $players_y = array();
-    foreach ($players_x as $p) $players_y[] = $p;
+    $players_y = $players_x;
     $results = fetch_rows("select * from results where rid='$rid'");
     echo "<table class='result-matrix'>";
     $first_y = true;
@@ -464,6 +410,106 @@ function result_matrix($rid) {
             $first_x = false;
         }
         echo "<td class='score'>$wins-$losses</td>";
+        echo "</tr>";
+        $first_y = false;
+    }
+    echo "</table>";
+}
+
+// Show matrix of results for all rounds in a band
+function result_matrix_band($bid) {
+    $where = ($bid ? "where b.bid='$bid'" : "");
+    $rounds = fetch_rows("select r.rid, r.name, concat_ws('', b.name, ', ',
+        if(r.begins, concat_ws('', date_format(r.begins, '%c/%e'), ' - ', date_format(r.ends, '%c/%e')), r.name)) as round
+        from rounds r join bands b on r.bid=b.bid
+        $where
+        order by b.name, r.begins desc",
+        "rounds/");
+    
+    $result_matrix = array();
+    
+    $player_rows = fetch_rows("select p.pid, p.name, p.num
+        from players p join players_to_bands pb on p.pid=pb.pid and pb.bid='$bid'");
+    $players = array();
+    foreach ($player_rows as $player_row) {
+        $players[$player_row['pid']] = $player_row;
+    }
+    $results = fetch_rows("select re.* from results re join rounds ro on re.rid=ro.rid
+        where ro.bid='$bid'");
+    
+    foreach ($players as $player) {
+        $row = array();
+        $wins = 0;
+        $losses = 0;
+        foreach ($rounds as $round) {
+            $col_result = null;
+            foreach ($results as $result) {
+                if ($result['rid'] != $round['rid'])
+                    continue;
+                $py = $player['pid'];
+                if ($result['pw'] == $py)
+                    $px = $result['pb'];
+                else if ($result['pb'] == $py)
+                    $px = $result['pw'];
+                else
+                    continue;
+                list($summary, $winloss) = get_result($result['rid'], $results, $px, $py);
+                $opp_num = $players[$px]['num'];
+                if ($winloss == 1) {
+                    $col_result = "${opp_num}-";
+                    $losses++;
+                } elseif ($winloss == 2) {
+                    $col_result = "${opp_num}+";
+                    $wins++;
+                }
+                $opp_name = $players[$px]['name'];
+                $href = ($result['sgf'] ? "href='" . href("results/" . $result['rid'] .
+                    "-" . $result['pw'] . "-" . $result['pb']) . "'" : "");
+                $col_result = "<a title=\"vs. $opp_name\" $href>$col_result</a>";
+            }
+            $row[] = either($col_result, "x");
+        }
+        $player['wins'] = $wins;
+        $player['losses'] = $losses;
+        array_unshift($row, $player);
+        $result_matrix[] = $row;
+    }
+    
+    if ($_GET['sort'] == "player") {
+        usort($result_matrix, create_function('$a, $b',
+            'return strcasecmp($a[0]["name"], $b[0]["name"]);'));
+    } else {
+        usort($result_matrix, create_function('$a, $b',
+            'return ($a[0]["wins"] < $b[0]["wins"]);'));
+    }
+    
+    echo "<table class='result-matrix'>";
+    echo "<tr><th><a href='?sort=player'>Player</a>" .
+        ($_GET['sort'] == "player" ? " &#9650;" : "") . "</th>";
+    foreach ($rounds as $round) {
+        echo "<th>" . $round['name'] . "</th>";
+    }
+    echo "<th class='score'><a href='?sort=wins'>Wins/Losses</a>" .
+        ($_GET['sort'] != "player" ? " &#9660;" : "") . "</th></tr>";
+    
+    $first_y = true;
+    $first_x = true;
+
+    foreach ($result_matrix as $row) {
+        echo "<tr>";
+        $first_x = true;
+        foreach ($row as $col) {
+            if ($first_x) {
+                echo "<th class='top'>" . $col['name'] . " (" . $col['num'] . ")</th>";
+            } else {
+                $class = (strpos($col, "+") === false ?
+                    (strpos($col, "-") !== false ? "loss" : "") :
+                    "win");
+                echo "<td class='$class'>" . $col . "</td>";
+            }
+            $first_x = false;
+        }
+        echo "<td class='score'>" . $row[0]['wins'] . "-" . $row[0]['losses'] . "</td>";
         echo "</tr>";
         $first_y = false;
     }

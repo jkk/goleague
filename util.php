@@ -151,16 +151,21 @@ function browse_table($select, $base_href="") {
         $row_num++;
         $retval .= "<tr>";
         $col_num = 0;
+        $col1 = "";
         foreach ($row as $key => $value) {
             $col_num++;
             $out_value = htmlentities($value);
+            $data = "";
             if ($col_num == 1) {
-                $href = $out_value ? href($base_href . $out_value) : "";
+                $href = ($out_value && $base_href ? href($base_href . $out_value) : "");
+                $col1 = $out_value;
                 continue;
             } elseif ($col_num == 2 && $href) {
                 $out_value = "<a href='$href'>$out_value</a>";
+            } elseif ($col_num == 2) {
+                $data = " data-col1='$col1'";
             }
-            $retval .= "<td>$out_value</td>";
+            $retval .= "<td$data>$out_value</td>";
         }
         $retval .= "</tr>\n";
     }

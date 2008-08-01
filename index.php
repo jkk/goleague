@@ -1,10 +1,4 @@
 <?php
-/*
-TODO:
-    - link to multiple bands
-    - google analytics
-*/
-
 include("util.php");
 include("conf.php");
 
@@ -27,6 +21,20 @@ class Site {
         
     var $protected = array(
         "admin" => array("username" => ADMIN_USERNAME, "password" => ADMIN_PASSWORD));
+    
+    function home() {
+        head();
+        echo "<h2>North American Ing Masters</h2>
+            <p>Current standings:</p>
+            <ul>";
+        $bands = fetch_rows("select bid, name from bands");
+        foreach ($bands as $band) {
+            echo "<li><a href='" . href("band-matrix/" . $band['bid']) . "'>" .
+                $band['name'] . "</a></li>";
+        }
+        echo "</ul>";
+        foot();
+    }
     
     // Show results for all rounds in a band
     function band_matrix($bid=null) {

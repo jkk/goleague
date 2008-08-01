@@ -1,0 +1,172 @@
+body {
+    margin: 0;
+    background: #ffc;
+    font-family: georgia;
+    font-size: 0.95em;
+}
+a:link, a:visited {
+    color: #003366;
+}
+a:active {
+    color: #a00;
+}
+a:hover {
+    color: #44c;
+}
+h1 {
+    padding: 20px 0 0 20px;
+    margin: 0;
+}
+h2 {
+    font-size: 1.4em;
+    color: #800;
+}
+h3 {
+    font-size: 1.0em;
+}
+#sidebar {
+    width: 150px;
+    padding-left: 10px;
+    float: left;
+}
+#sidebar input {
+    width: 122px;
+}
+#content {
+    padding: 0 0 80px 0;
+    margin: 0 20px 20px 180px;
+    border-bottom: 1px solid #888;
+}
+.clear {
+    clear: both;
+}
+form div {
+    margin-top: 10px;
+}
+input[type="text"] {
+    width: 300px;
+}
+input[type="submit"] {
+    display: block;
+    margin-top: 20px;
+}
+input[size="10"] {
+    width: 100px;
+}
+form span {
+    font-size: 0.8em;
+    color: #2e2624;
+}
+textarea {
+    width: 300px;
+    height: 100px;
+}
+table.browse-table {
+    width: 100%;
+    border-spacing: 0;
+    border-collapse: collapse;
+    margin: 0 0 20px 0;
+}
+table.browse-table th {
+    text-align: left;
+    border-bottom: 2px solid #aaa;
+}
+table.browse-table td {
+    padding: 5px;
+    border-bottom: 1px solid #aaa;
+}
+table.browse-table td a {
+    display: block;
+}
+table.browse-table td .del-player {
+    display: inline;
+    color: red;
+    padding: 0 5px 0 5px;
+}
+#breadcrumbs {
+    font-size: 0.9em;
+    margin: 0 0 10px 0;
+    color: #555;
+}
+#breadcrumbs a {
+}
+#players div {
+    margin-top: 0px;
+    margin-left: 10px;
+}
+#feedback {
+    border: 1px solid #ccc;
+    padding: 5px;
+    background: #ffc;
+    color: #000;
+    font-weight: bold;
+}
+#feedback a {
+    color: #005;
+}
+.result-matrix {
+    border-spacing: 0;
+    border-collapse: collapse;
+    background: #ffd;
+}
+.result-matrix td, .result-matrix th {
+    padding: 5px;
+    text-align: center;
+    border-bottom: 1px solid #888;
+}
+.result-matrix th {
+    border-bottom: 1px solid #888;
+    border-right: 1px solid #888;
+    font-size: 0.9em;
+    font-weight: bold;
+    text-align: left;
+}
+.result-matrix th.top {
+    font-weight: normal;
+}
+.result-matrix th.score {
+    border-right: none;
+}
+.result-matrix td.x {
+    background: #ccc;
+    color: #555;
+}
+.result-matrix td.win {
+    background: #bfb;
+}
+.result-matrix td.loss {
+    background: #fbb;
+}
+.result-matrix td.score {
+    border-left: 1px solid #888;
+}
+.result-matrix td a {
+    color: #000;
+    display: block;
+}
+.eidogo-player {
+    border: 1px solid #333 !important;
+    width: 660px !important;
+}
+.eidogo-player .board-container {
+    float: left !important;
+}
+.eidogo-player .controls-container {
+    width: 239px !important;
+    float: right !important;
+    border-top: none !important;
+}
+.eidogo-player .control {
+    margin: 5px 2px 5px 1px !important;
+}
+.eidogo-player .nav-slider {
+    width: 228px !important;
+}
+.eidogo-player .move-number {
+    display: none !important;
+}
+.eidogo-player .comments {
+    width: 218px !important;
+    height: 362px !important;
+    float: right !important;
+}

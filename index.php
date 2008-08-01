@@ -174,7 +174,8 @@ class Site {
                 delbtn.href = "#";
                 td.appendChild(delbtn);
                 $(delbtn).click(function() {
-                    var sure = confirm("Are you sure you want to delete that player?");
+                    var sure = confirm("Are you sure you want to delete that player? All of the player's" +
+                        " games will also be deleted.");
                     if (!sure)
                         return;
                     var pid = td.getAttribute("data-col1");
@@ -196,6 +197,7 @@ class Site {
         delete_rows("players", "pid='$pid'");
         delete_rows("players_to_bands", "pid='$pid'");
         delete_rows("players_to_rounds", "pid='$pid'");
+        delete_rows("results", "pw='$pid' or pb='$pid'");
     }
     
     // Add new players to a band

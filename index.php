@@ -535,6 +535,8 @@ function result_matrix_band($bid) {
 function get_result($rid, $results, $pid1, $pid2) {
     if ($pid1 == $pid2) return array("-", 0);
     foreach ($results as $result) {
+        if ($result['rid'] != $rid)
+            continue;
         if (($pid1 == $result['pw'] || $pid1 == $result['pb']) &&
             ($pid2 == $result['pw'] || $pid2 == $result['pb'])) {
             if ($result['result'] == "NR" || !$result['result']) {
